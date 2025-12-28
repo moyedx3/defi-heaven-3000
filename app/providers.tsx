@@ -32,7 +32,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           },
         }}
         paraModalConfig={{
-          logo: "/anime-character.jpg",
+          logo: "/char-main.png",
           theme: {
             foregroundColor: "#d4145a",
             backgroundColor: "#ffe4ec",

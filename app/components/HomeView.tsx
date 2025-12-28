@@ -12,7 +12,7 @@ export function HomeView() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-3 relative z-10 shrink-0">
         <div className="flex items-center gap-2">
-          <div className="text-2xl">💖</div>
+          <span className="text-2xl">💰</span>
           <h1 className="anime-title text-xl">
             Wallet
           </h1>

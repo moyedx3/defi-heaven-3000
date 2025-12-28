@@ -2,71 +2,86 @@
 
 import Image from "next/image";
 
-// Tax document SVG
-const TaxDocumentSVG = () => (
-  <svg viewBox="0 0 80 100" className="w-full h-full">
-    {/* Paper */}
-    <rect x="5" y="5" width="70" height="90" rx="2" fill="#fff" stroke="#ddd" strokeWidth="1" />
-    {/* Header - IRS style */}
-    <rect x="10" y="10" width="60" height="8" fill="#e8e8e8" />
-    <text x="15" y="17" fontSize="5" fill="#666">Form 1040</text>
-    {/* Content lines */}
-    <rect x="10" y="25" width="50" height="2" fill="#e0e0e0" />
-    <rect x="10" y="32" width="55" height="2" fill="#e0e0e0" />
-    <rect x="10" y="39" width="40" height="2" fill="#e0e0e0" />
-    <rect x="10" y="46" width="58" height="2" fill="#e0e0e0" />
-    <rect x="10" y="53" width="35" height="2" fill="#e0e0e0" />
-    <rect x="10" y="60" width="48" height="2" fill="#e0e0e0" />
-    <rect x="10" y="67" width="52" height="2" fill="#e0e0e0" />
-    <rect x="10" y="74" width="30" height="2" fill="#e0e0e0" />
-    <rect x="10" y="81" width="45" height="2" fill="#e0e0e0" />
-    {/* Checkboxes */}
-    <rect x="55" y="31" width="5" height="5" fill="none" stroke="#ccc" strokeWidth="0.5" />
-    <rect x="55" y="45" width="5" height="5" fill="none" stroke="#ccc" strokeWidth="0.5" />
-    <rect x="55" y="59" width="5" height="5" fill="none" stroke="#ccc" strokeWidth="0.5" />
+// Character images (transparent PNGs)
+const CHARACTER_IMAGES = ["/char-main.png", "/char-1.png", "/char-2.png"];
+
+// Decorative heart SVG
+const HeartSVG = ({ color = "#ff69b4" }: { color?: string }) => (
+  <svg viewBox="0 0 24 24" className="w-full h-full">
+    <path
+      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+      fill={color}
+      opacity="0.6"
+    />
   </svg>
 );
 
-// Generate pattern positions for a diagonal grid
-const generatePatternGrid = () => {
+// Generate pattern for decorative elements
+const generateDecoPattern = () => {
   const items: Array<{
     id: string;
-    type: "character" | "document";
+    x: number;
+    y: number;
+    rotation: number;
+    scale: number;
+    color: string;
+  }> = [];
+
+  const spacing = 200;
+  const rows = 10;
+  const cols = 8;
+  const colors = ["#ff69b4", "#ff1493", "#ffb6c1", "#ffd1dc"];
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const offsetX = row % 2 === 0 ? 0 : spacing / 2;
+      items.push({
+        id: `deco-${row}-${col}`,
+        x: col * spacing + offsetX - 50,
+        y: row * spacing - 50,
+        rotation: -15 + ((row * 7 + col * 11) % 30),
+        scale: 0.6 + ((row + col) % 3) * 0.3,
+        color: colors[(row + col) % colors.length],
+      });
+    }
+  }
+  return items;
+};
+
+// Generate pattern for character images
+const generateCharacterPattern = () => {
+  const items: Array<{
+    id: string;
+    charIndex: number;
     x: number;
     y: number;
     rotation: number;
     scale: number;
   }> = [];
 
-  // Create a diagonal repeating pattern
-  const spacing = 280; // Space between items
-  const rows = 8;
-  const cols = 6;
+  const spacing = 400;
+  const rows = 6;
+  const cols = 5;
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      // Alternate between character and document
-      const isCharacter = (row + col) % 2 === 0;
-      
-      // Offset every other row for diagonal effect
       const offsetX = row % 2 === 0 ? 0 : spacing / 2;
-      
       items.push({
-        id: `${row}-${col}`,
-        type: isCharacter ? "character" : "document",
+        id: `char-${row}-${col}`,
+        charIndex: (row + col) % CHARACTER_IMAGES.length,
         x: col * spacing + offsetX - 100,
         y: row * spacing - 100,
-        rotation: -15 + (row * 5 + col * 3) % 30, // Varying rotations
-        scale: 0.8 + ((row + col) % 3) * 0.15, // Varying scales
+        rotation: -12 + ((row * 5 + col * 7) % 24),
+        scale: 0.5 + ((row + col) % 3) * 0.15,
       });
     }
   }
-
   return items;
 };
 
 export function AnimeBackground() {
-  const patternItems = generatePatternGrid();
+  const decoItems = generateDecoPattern();
+  const charItems = generateCharacterPattern();
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -77,44 +92,67 @@ export function AnimeBackground() {
           background: "linear-gradient(180deg, #ffe8ed 0%, #ffd6e0 50%, #ffc8d6 100%)",
         }}
       />
-      
-      {/* Tilted pattern layer */}
+
+      {/* Tilted character pattern layer */}
       <div 
         className="absolute pointer-events-none"
         style={{
-          top: "-20%",
-          left: "-20%",
-          width: "140%",
-          height: "140%",
-          transform: "rotate(-5deg)",
+          top: "-15%",
+          left: "-15%",
+          width: "130%",
+          height: "130%",
+          transform: "rotate(-8deg)",
         }}
       >
-        {patternItems.map((item) => (
+        {charItems.map((item) => (
           <div
             key={item.id}
             className="absolute pointer-events-none"
             style={{
               left: item.x,
               top: item.y,
-              width: item.type === "character" ? 160 : 90,
-              height: item.type === "character" ? 220 : 120,
+              width: 180,
+              height: 240,
               transform: `rotate(${item.rotation}deg) scale(${item.scale})`,
-              opacity: item.type === "character" ? 0.08 : 0.06,
-              filter: "blur(0.5px)",
+              opacity: 0.06,
             }}
           >
-            {item.type === "character" ? (
-              <Image
-                src="/anime-character.jpg"
-                alt=""
-                width={160}
-                height={220}
-                className="w-full h-full object-contain"
-                priority={false}
-              />
-            ) : (
-              <TaxDocumentSVG />
-            )}
+            <Image
+              src={CHARACTER_IMAGES[item.charIndex]}
+              alt=""
+              width={180}
+              height={240}
+              className="w-full h-full object-contain"
+            />
+          </div>
+        ))}
+      </div>
+      
+      {/* Hearts overlay pattern */}
+      <div 
+        className="absolute pointer-events-none"
+        style={{
+          top: "-10%",
+          left: "-10%",
+          width: "120%",
+          height: "120%",
+          transform: "rotate(-5deg)",
+        }}
+      >
+        {decoItems.map((item) => (
+          <div
+            key={item.id}
+            className="absolute pointer-events-none"
+            style={{
+              left: item.x,
+              top: item.y,
+              width: 30,
+              height: 30,
+              transform: `rotate(${item.rotation}deg) scale(${item.scale})`,
+              opacity: 0.1,
+            }}
+          >
+            <HeartSVG color={item.color} />
           </div>
         ))}
       </div>
