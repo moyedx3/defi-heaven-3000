@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useSendTransaction, useWaitForTransactionReceipt, useChainId, useSwitchChain, useWriteContract } from "wagmi";
 import { parseEther, parseUnits, isAddress, erc20Abi } from "viem";
 import { mainnet, sepolia, base, arbitrum } from "wagmi/chains";
+import { useAccount as useParaAccount } from "@getpara/react-sdk";
 import { addPendingTransaction, markTransactionConfirmed } from "../hooks/useTransactionHistory";
 
 interface Token {
@@ -56,6 +57,15 @@ export function SendForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amountType, setAmountType] = useState<"ETH" | "USD">("ETH"); // Default to ETH
   const [ethPrice, setEthPrice] = useState<number | null>(null);
+  
+  // Get wallet address from Para SDK
+  const paraAccount = useParaAccount();
+  const walletAddress = useMemo(() => {
+    if (!paraAccount.isConnected || !paraAccount.embedded?.wallets) return null;
+    const wallets = Object.values(paraAccount.embedded.wallets);
+    const evmWallet = wallets.find((w: any) => w.type === "EVM");
+    return evmWallet?.address as `0x${string}` | undefined;
+  }, [paraAccount]);
   
   // Store transaction details when submitting so we can add to pending list later
   const pendingTxRef = useRef<{ to: string; amount: string; symbol: string; chainId: number } | null>(null);
@@ -232,24 +242,25 @@ export function SendForm() {
 
   // Mark transaction as confirmed when confirmed
   useEffect(() => {
-    if (activeIsConfirmed && activeHash) {
+    if (activeIsConfirmed && activeHash && walletAddress) {
       // Transaction is confirmed, mark it as confirmed immediately
-      markTransactionConfirmed(activeHash);
+      markTransactionConfirmed(walletAddress, activeHash);
       window.dispatchEvent(new CustomEvent("pendingTransactionAdded"));
     }
-  }, [activeIsConfirmed, activeHash, currentChainId]);
+  }, [activeIsConfirmed, activeHash, currentChainId, walletAddress]);
 
   // Add pending transaction when hash becomes available
   useEffect(() => {
-    if (activeHash && !activeIsConfirmed && pendingTxRef.current) {
+    if (activeHash && !activeIsConfirmed && pendingTxRef.current && walletAddress) {
       const txDetails = pendingTxRef.current;
       
-      // Check if we've already added this transaction
-      const pending = JSON.parse(localStorage.getItem("para_pending_transactions") || "[]");
+      // Check if we've already added this transaction (using wallet-specific key)
+      const storageKey = `para_pending_transactions_${walletAddress.toLowerCase()}`;
+      const pending = JSON.parse(localStorage.getItem(storageKey) || "[]");
       const alreadyAdded = pending.some((tx: any) => tx.hash === activeHash);
       
       if (!alreadyAdded) {
-        addPendingTransaction({
+        addPendingTransaction(walletAddress, {
           hash: activeHash as `0x${string}`,
           chainId: txDetails.chainId,
           to: txDetails.to as `0x${string}`,
@@ -264,7 +275,7 @@ export function SendForm() {
         pendingTxRef.current = null;
       }
     }
-  }, [activeHash, activeIsConfirmed]);
+  }, [activeHash, activeIsConfirmed, walletAddress]);
 
   // Reset form on successful transaction
   useEffect(() => {

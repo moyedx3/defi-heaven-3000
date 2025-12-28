@@ -36,9 +36,9 @@ interface ChainTransaction {
   isError?: string;
 }
 
-// Store pending transactions in localStorage
-const PENDING_TX_STORAGE_KEY = "para_pending_transactions";
-const CONFIRMED_TX_STORAGE_KEY = "para_confirmed_transactions"; // Track confirmed but not yet indexed
+// Store pending transactions in localStorage (wallet-specific)
+const getPendingStorageKey = (address: string) => `para_pending_transactions_${address.toLowerCase()}`;
+const getConfirmedStorageKey = (address: string) => `para_confirmed_transactions_${address.toLowerCase()}`;
 
 interface ConfirmedTransaction {
   hash: string;
@@ -51,66 +51,68 @@ interface ConfirmedTransaction {
   confirmedAt: number; // Timestamp when confirmed
 }
 
-function getPendingTransactions(): PendingTransaction[] {
-  if (typeof window === "undefined") return [];
+function getPendingTransactions(walletAddress: string): PendingTransaction[] {
+  if (typeof window === "undefined" || !walletAddress) return [];
   try {
-    const stored = localStorage.getItem(PENDING_TX_STORAGE_KEY);
+    const storageKey = getPendingStorageKey(walletAddress);
+    const stored = localStorage.getItem(storageKey);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
   }
 }
 
-function savePendingTransactions(txs: PendingTransaction[]) {
-  if (typeof window === "undefined") return;
+function savePendingTransactions(walletAddress: string, txs: PendingTransaction[]) {
+  if (typeof window === "undefined" || !walletAddress) return;
   try {
-    localStorage.setItem(PENDING_TX_STORAGE_KEY, JSON.stringify(txs));
+    localStorage.setItem(getPendingStorageKey(walletAddress), JSON.stringify(txs));
   } catch {
     // Ignore storage errors
   }
 }
 
-function getConfirmedTransactions(): ConfirmedTransaction[] {
-  if (typeof window === "undefined") return [];
+function getConfirmedTransactions(walletAddress: string): ConfirmedTransaction[] {
+  if (typeof window === "undefined" || !walletAddress) return [];
   try {
-    const stored = localStorage.getItem(CONFIRMED_TX_STORAGE_KEY);
+    const storageKey = getConfirmedStorageKey(walletAddress);
+    const stored = localStorage.getItem(storageKey);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
   }
 }
 
-function saveConfirmedTransactions(txs: ConfirmedTransaction[]) {
-  if (typeof window === "undefined") return;
+function saveConfirmedTransactions(walletAddress: string, txs: ConfirmedTransaction[]) {
+  if (typeof window === "undefined" || !walletAddress) return;
   try {
-    localStorage.setItem(CONFIRMED_TX_STORAGE_KEY, JSON.stringify(txs));
+    localStorage.setItem(getConfirmedStorageKey(walletAddress), JSON.stringify(txs));
   } catch {
     // Ignore storage errors
   }
 }
 
-export function removePendingTransaction(hash: string) {
-  const pending = getPendingTransactions();
+export function removePendingTransaction(walletAddress: string, hash: string) {
+  const pending = getPendingTransactions(walletAddress);
   const filtered = pending.filter((tx) => tx.hash !== hash);
-  savePendingTransactions(filtered);
+  savePendingTransactions(walletAddress, filtered);
 }
 
-export function addPendingTransaction(tx: PendingTransaction) {
-  const pending = getPendingTransactions();
+export function addPendingTransaction(walletAddress: string, tx: PendingTransaction) {
+  const pending = getPendingTransactions(walletAddress);
   // Check if already exists
   if (!pending.some((t) => t.hash === tx.hash)) {
     pending.push(tx);
-    savePendingTransactions(pending);
+    savePendingTransactions(walletAddress, pending);
   }
 }
 
-export function markTransactionConfirmed(hash: string) {
+export function markTransactionConfirmed(walletAddress: string, hash: string) {
   // Find the transaction in pending list to get full data
-  const pending = getPendingTransactions();
+  const pending = getPendingTransactions(walletAddress);
   const pendingTx = pending.find((t) => t.hash.toLowerCase() === hash.toLowerCase());
   
   if (pendingTx) {
-    const confirmed = getConfirmedTransactions();
+    const confirmed = getConfirmedTransactions(walletAddress);
     if (!confirmed.some((t) => t.hash.toLowerCase() === hash.toLowerCase())) {
       confirmed.push({
         hash: pendingTx.hash,
@@ -122,25 +124,25 @@ export function markTransactionConfirmed(hash: string) {
         timestamp: pendingTx.timestamp,
         confirmedAt: Date.now(),
       });
-      saveConfirmedTransactions(confirmed);
+      saveConfirmedTransactions(walletAddress, confirmed);
     }
     // Remove from pending after saving to confirmed
-    removePendingTransaction(hash);
+    removePendingTransaction(walletAddress, hash);
   }
 }
 
-function isTransactionConfirmed(hash: string): boolean {
-  const confirmed = getConfirmedTransactions();
+function isTransactionConfirmed(walletAddress: string, hash: string): boolean {
+  const confirmed = getConfirmedTransactions(walletAddress);
   return confirmed.some((t) => t.hash.toLowerCase() === hash.toLowerCase());
 }
 
 // Clean up old confirmed transactions (older than 1 hour) that should be in explorer by now
-function cleanupOldConfirmedTransactions() {
-  const confirmed = getConfirmedTransactions();
+function cleanupOldConfirmedTransactions(walletAddress: string) {
+  const confirmed = getConfirmedTransactions(walletAddress);
   const oneHourAgo = Date.now() - 60 * 60 * 1000;
   const filtered = confirmed.filter((t) => t.confirmedAt > oneHourAgo);
   if (filtered.length !== confirmed.length) {
-    saveConfirmedTransactions(filtered);
+    saveConfirmedTransactions(walletAddress, filtered);
   }
 }
 
@@ -212,7 +214,7 @@ export function useTransactionHistory() {
     }
     
     // Clean up old confirmed transactions on mount
-    cleanupOldConfirmedTransactions();
+    cleanupOldConfirmedTransactions(walletAddress);
 
     let isInitialLoad = true;
 
@@ -224,7 +226,7 @@ export function useTransactionHistory() {
       }
       
       // Re-fetch pending transactions fresh from storage
-      const currentPendingTxs = getPendingTransactions();
+      const currentPendingTxs = getPendingTransactions(walletAddress);
       const currentPendingHashes = currentPendingTxs.map((tx) => tx.hash);
       
       const chains = [mainnet.id, base.id, arbitrum.id, sepolia.id];
@@ -246,7 +248,7 @@ export function useTransactionHistory() {
             // If this transaction is in pending list, mark it as confirmed
             if (currentPendingHashes.includes(txHash)) {
               confirmedHashes.add(txHash.toLowerCase());
-              removePendingTransaction(tx.hash);
+              removePendingTransaction(walletAddress, tx.hash);
             }
 
             const isSend = tx.from.toLowerCase() === walletAddress.toLowerCase();
@@ -289,7 +291,7 @@ export function useTransactionHistory() {
         });
         
         // Add confirmed transactions that are NOT in explorer yet
-        const confirmedTxs = getConfirmedTransactions();
+        const confirmedTxs = getConfirmedTransactions(walletAddress);
         confirmedTxs.forEach((confirmed) => {
           // Skip if missing required fields (old format or corrupted data)
           if (!confirmed.hash || !confirmed.type) {
@@ -316,7 +318,7 @@ export function useTransactionHistory() {
           } else {
             // Already in explorer, remove from confirmed list as it's now indexed
             const filtered = confirmedTxs.filter((t) => t.hash.toLowerCase() !== txHashLower);
-            saveConfirmedTransactions(filtered);
+            saveConfirmedTransactions(walletAddress, filtered);
           }
         });
 
