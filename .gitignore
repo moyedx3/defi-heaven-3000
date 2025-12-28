@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# large documentation files
+llm.txt
+
+# source images (copies in /public/)
+/image/
