@@ -6,6 +6,7 @@ import { HomeView } from "./components/HomeView";
 import { ReceiveView } from "./components/ReceiveView";
 import { HistoryView } from "./components/HistoryView";
 import { BottomNav } from "./components/BottomNav";
+import { AnimeBackground } from "./components/AnimeBackground";
 import { useModal } from "@getpara/react-sdk";
 
 export default function Home() {
@@ -15,39 +16,53 @@ export default function Home() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-zinc-50 dark:bg-black">
-        <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4">
-          <div className="w-full rounded-3xl border border-zinc-200/50 bg-white p-10 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-900">
-            <div className="mb-8 text-center">
-              <h1 className="mb-3 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-                Welcome
-              </h1>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                Connect your wallet to get started
-              </p>
+      <>
+        <AnimeBackground />
+        <div className="min-h-screen relative z-10">
+          <div className="mx-auto flex min-h-screen max-w-md items-center justify-center px-4">
+            <div className="w-full anime-card rounded-3xl p-10 relative overflow-hidden">
+              {/* Decorative sparkles */}
+              <div className="absolute top-4 left-4 text-2xl animate-sparkle" style={{ animationDelay: '0s', animationDuration: '3s' }}>✨</div>
+              <div className="absolute top-8 right-8 text-xl animate-sparkle" style={{ animationDelay: '1s', animationDuration: '4s' }}>⭐</div>
+              <div className="absolute bottom-6 left-8 text-2xl animate-sparkle" style={{ animationDelay: '2s', animationDuration: '3.5s' }}>✨</div>
+              
+              <div className="mb-8 text-center relative z-10">
+                <h1 className="mb-4 anime-title text-4xl text-white">
+                  Welcome!
+                </h1>
+                <p className="text-lg font-bold text-white mb-2">
+                  Your wallet awaits your command ♥
+                </p>
+                <p className="text-sm text-white/90">
+                  Connect your wallet to begin your journey
+                </p>
+              </div>
+              <button
+                onClick={() => openModal()}
+                className="w-full anime-button rounded-2xl px-6 py-4 text-lg font-bold text-white relative z-10"
+              >
+                Connect Wallet
+              </button>
             </div>
-            <button
-              onClick={() => openModal()}
-              className="w-full rounded-xl bg-zinc-900 px-6 py-3.5 text-sm font-medium text-white transition-all hover:bg-zinc-800 hover:shadow-sm dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-100"
-            >
-              Connect Wallet
-            </button>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black">
-      <div className="mx-auto max-w-md">
-        <main>
-          {currentView === "home" && <HomeView />}
-          {currentView === "receive" && <ReceiveView />}
-          {currentView === "history" && <HistoryView />}
-        </main>
+    <>
+      <AnimeBackground />
+      <div className="min-h-screen relative z-10">
+        <div className="mx-auto max-w-md">
+          <main>
+            {currentView === "home" && <HomeView />}
+            {currentView === "receive" && <ReceiveView />}
+            {currentView === "history" && <HistoryView />}
+          </main>
+        </div>
+        <BottomNav currentView={currentView} onViewChange={setCurrentView} />
       </div>
-      <BottomNav currentView={currentView} onViewChange={setCurrentView} />
-    </div>
+    </>
   );
 }

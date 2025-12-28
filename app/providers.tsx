@@ -16,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           apiKey: process.env.NEXT_PUBLIC_PARA_API_KEY || "",
         }}
         config={{
-          appName: "Para Test App",
+          appName: "Para Wallet",
         }}
         externalWalletConfig={{
           evmConnector: {
@@ -30,6 +30,44 @@ export function Providers({ children }: { children: React.ReactNode }) {
               },
             },
           },
+        }}
+        paraModalConfig={{
+          logo: "/anime-character.jpg",
+          theme: {
+            foregroundColor: "#d4145a",
+            backgroundColor: "#ffe4ec",
+            accentColor: "#ff69b4",
+            mode: "light",
+            borderRadius: "lg",
+            font: "Fredoka, sans-serif",
+            oAuthLogoVariant: "dark",
+            customPalette: {
+              text: {
+                primary: "#d4145a",
+                secondary: "#ff69b4",
+                subtle: "#ffb6c1",
+                inverted: "#ffffff",
+                error: "#ff3b30",
+              },
+              modal: {
+                surface: {
+                  main: "#fff0f5",
+                  footer: "#ffe4ec",
+                },
+                border: "#ffb6c1",
+              },
+              button: {
+                primary: {
+                  background: "linear-gradient(180deg, #ff69b4 0%, #d4145a 100%)",
+                  hover: "#ff1493",
+                  text: "#ffffff",
+                },
+              },
+            },
+          },
+          oAuthMethods: ["GOOGLE", "TWITTER", "DISCORD", "APPLE"],
+          disablePhoneLogin: false,
+          disableEmailLogin: false,
         }}
       >
         {children}

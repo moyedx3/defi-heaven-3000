@@ -31,28 +31,31 @@ export function ReceiveCard() {
   }
 
   return (
-    <div className="rounded-3xl border border-zinc-200/50 bg-white p-6 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-900 md:p-8">
-      <div className="flex flex-col items-center space-y-8">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950">
-          <QRCodeSVG value={address} size={240} level="H" />
+    <div className="relative anime-card rounded-2xl p-4 overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-2 right-2 text-lg">📱</div>
+      
+      <div className="flex flex-col items-center gap-4 relative z-10">
+        <div className="rounded-xl border-3 border-white bg-white p-3">
+          <QRCodeSVG value={address} size={160} level="H" />
         </div>
 
-        <div className="w-full space-y-3">
-          <label className="block text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-            Your Address
+        <div className="w-full">
+          <label className="mb-1.5 block anime-subtitle text-[10px] uppercase tracking-wider">
+            📍 Your Address
           </label>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <input
               type="text"
               value={address}
               readOnly
-              className="flex-1 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+              className="flex-1 rounded-xl border-2 border-white bg-white/90 px-3 py-2 font-mono text-xs font-bold text-pink-600"
             />
             <button
               onClick={handleCopy}
-              className="rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              className="anime-button rounded-xl border-2 border-white px-3 py-2 text-xs font-bold text-white"
             >
-              {copied ? "Copied" : "Copy"}
+              {copied ? "✓" : "Copy"}
             </button>
           </div>
         </div>

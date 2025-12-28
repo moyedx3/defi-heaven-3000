@@ -39,24 +39,21 @@ export function TransactionList() {
 
   if (isLoading) {
     return (
-      <div className="rounded-3xl border border-zinc-200/50 bg-white p-6 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-900 md:p-8">
-        <h2 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          Recent Transactions
+      <div className="relative anime-card rounded-2xl p-4 overflow-hidden">
+        <h2 className="mb-3 anime-title text-lg relative z-10">
+          Transactions
         </h2>
-        <div className="space-y-1">
+        <div className="space-y-2">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="flex items-center justify-between rounded-xl px-4 py-4"
+              className="flex items-center justify-between rounded-xl px-3 py-2 bg-white/10"
             >
-              <div className="flex items-center gap-4">
-                <div className="h-11 w-11 animate-pulse rounded-full bg-zinc-100 dark:bg-zinc-800" />
-                <div className="space-y-2">
-                  <div className="h-4 w-20 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-                  <div className="h-3 w-32 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
-                </div>
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 animate-pulse rounded-full bg-white/30" />
+                <div className="h-4 w-16 animate-pulse rounded bg-white/30" />
               </div>
-              <div className="h-4 w-24 animate-pulse rounded bg-zinc-100 dark:bg-zinc-800" />
+              <div className="h-4 w-12 animate-pulse rounded bg-white/30" />
             </div>
           ))}
         </div>
@@ -66,23 +63,23 @@ export function TransactionList() {
 
   if (transactions.length === 0) {
     return (
-      <div className="rounded-3xl border border-zinc-200/50 bg-white p-6 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-900 md:p-8">
-        <h2 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-          Recent Transactions
+      <div className="relative anime-card rounded-2xl p-4 overflow-hidden">
+        <h2 className="mb-3 anime-title text-lg relative z-10">
+          Transactions
         </h2>
-        <div className="py-12 text-center text-sm text-zinc-400 dark:text-zinc-500">
-          No transactions yet
+        <div className="py-6 text-center anime-subtitle text-sm">
+          No transactions yet ♥
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-3xl border border-zinc-200/50 bg-white p-6 shadow-sm dark:border-zinc-800/50 dark:bg-zinc-900 md:p-8">
-      <h2 className="mb-6 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-        Recent Transactions
+    <div className="relative anime-card rounded-2xl p-4 overflow-hidden h-full">
+      <h2 className="mb-3 anime-title text-lg relative z-10">
+        Transactions
       </h2>
-      <div className="space-y-1">
+      <div className="space-y-2 relative z-10 overflow-y-auto max-h-[calc(100%-40px)]">
         {transactions.map((tx) => (
           <div
             key={tx.id}
@@ -90,65 +87,48 @@ export function TransactionList() {
               const url = getExplorerUrl(tx.chainId, tx.hash);
               window.open(url, "_blank", "noopener,noreferrer");
             }}
-            className="flex cursor-pointer items-center justify-between rounded-xl px-4 py-4 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+            className="flex cursor-pointer items-center justify-between rounded-xl px-3 py-2 bg-white/10 transition-all hover:bg-white/20 border border-white/30"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <div
-                className={`flex h-11 w-11 items-center justify-center rounded-full ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-lg ${
                   tx.type === "send"
-                    ? "bg-red-50 dark:bg-red-950/30"
-                    : "bg-green-50 dark:bg-green-950/30"
+                    ? "bg-red-500/30"
+                    : "bg-green-500/30"
                 }`}
               >
-                <span className="text-lg">
-                  {tx.type === "send" ? "↗" : "↘"}
-                </span>
+                {tx.type === "send" ? "↗️" : "↘️"}
               </div>
               <div>
-                <div className="font-medium text-zinc-900 dark:text-zinc-50">
+                <div className="text-xs font-bold text-white">
                   {tx.type === "send" ? "Sent" : "Received"}
                 </div>
-                <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                  {tx.type === "send"
-                    ? `To ${formatAddress(tx.to || "")}`
-                    : `From ${formatAddress(tx.from || "")}`}
-                </div>
-                <div className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                <div className="text-[10px] text-white/70">
                   {formatDate(tx.date)}
                 </div>
               </div>
             </div>
             <div className="text-right">
               <div
-                className={`font-semibold ${
+                className={`font-bold text-sm ${
                   tx.type === "send"
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-green-600 dark:text-green-400"
+                    ? "text-red-300"
+                    : "text-green-300"
                 }`}
               >
                 {tx.type === "send" ? "-" : "+"}
-                {parseFloat(tx.amount).toFixed(4)} {tx.symbol}
+                {parseFloat(tx.amount).toFixed(4)}
               </div>
               <div
-                className={`mt-1 text-xs font-medium ${
+                className={`text-[10px] font-bold ${
                   tx.status === "confirmed"
-                    ? "text-green-600 dark:text-green-400"
+                    ? "text-green-300"
                     : tx.status === "pending"
-                    ? "text-amber-600 dark:text-amber-400"
-                    : tx.status === "failed" || tx.status === "rejected"
-                    ? "text-red-600 dark:text-red-400"
-                    : "text-zinc-400 dark:text-zinc-500"
+                    ? "text-yellow-300"
+                    : "text-red-300"
                 }`}
               >
-                {tx.status === "pending"
-                  ? "Pending"
-                  : tx.status === "confirmed"
-                  ? "Confirmed"
-                  : tx.status === "failed"
-                  ? "Failed"
-                  : tx.status === "rejected"
-                  ? "Rejected"
-                  : "Unknown"}
+                {tx.status === "pending" ? "⏳ Pending" : tx.status === "confirmed" ? "✅ Confirmed" : "❌ Failed"}
               </div>
             </div>
           </div>
