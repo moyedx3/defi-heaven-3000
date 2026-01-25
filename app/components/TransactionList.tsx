@@ -43,127 +43,68 @@ export function TransactionList() {
 
   if (isLoading) {
     return (
-      <div className="anime-card rounded-2xl p-4 overflow-hidden">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xl">📋</span>
-          <h2 className="anime-subtitle text-base font-bold">
-            Transactions
-          </h2>
-        </div>
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="tx-item px-4 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="skeleton h-10 w-10 rounded-full" />
-                  <div className="space-y-2">
-                    <div className="skeleton h-4 w-20" />
-                    <div className="skeleton h-3 w-28" />
-                  </div>
-                </div>
-                <div className="skeleton h-5 w-16" />
+      <div className="space-y-1.5">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white/10 rounded-lg px-2 py-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="skeleton h-6 w-6 rounded-full" />
+                <div className="skeleton h-3 w-16" />
               </div>
+              <div className="skeleton h-3 w-12" />
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     );
   }
 
   if (transactions.length === 0) {
     return (
-      <div className="anime-card rounded-2xl p-6 overflow-hidden text-center">
-        <div className="py-8">
-          <div className="text-5xl mb-4 animate-heartbeat">💫</div>
-          <h3 className="anime-subtitle text-lg font-bold mb-2">No Transactions Yet</h3>
-          <p className="text-sm text-white/70">
-            Your transaction history will appear here
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center h-full py-6">
+        <div className="text-3xl mb-2 animate-heartbeat">💫</div>
+        <p className="text-xs text-white/70">No transactions yet</p>
       </div>
     );
   }
 
   return (
-    <div className="anime-card rounded-2xl p-4 overflow-hidden h-full">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">📋</span>
-          <h2 className="anime-subtitle text-base font-bold">
-            Recent Activity
-          </h2>
-        </div>
-        <span className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded-full">
-          {transactions.length} txns
-        </span>
-      </div>
-
-      <div className="space-y-2 overflow-y-auto max-h-[calc(100%-50px)]">
-        {transactions.map((tx, index) => (
-          <div
-            key={tx.id}
-            onClick={() => {
-              const url = getExplorerUrl(tx.chainId, tx.hash);
-              window.open(url, "_blank", "noopener,noreferrer");
-            }}
-            className={`tx-item ${tx.type === "send" ? "tx-send" : "tx-receive"} px-4 py-3`}
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* Icon */}
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full text-lg ${
-                    tx.type === "send"
-                      ? "bg-red-500/30 border-2 border-red-400/50"
-                      : "bg-green-500/30 border-2 border-green-400/50"
-                  }`}
-                >
-                  {tx.type === "send" ? "↗️" : "↘️"}
+    <div className="space-y-1.5">
+      {transactions.map((tx, index) => (
+        <div
+          key={tx.id}
+          onClick={() => {
+            const url = getExplorerUrl(tx.chainId, tx.hash);
+            window.open(url, "_blank", "noopener,noreferrer");
+          }}
+          className={`bg-white/10 hover:bg-white/20 rounded-lg px-2 py-1.5 cursor-pointer transition-all ${
+            tx.type === "send" ? "border-l-2 border-red-400" : "border-l-2 border-green-400"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm">{tx.type === "send" ? "↗️" : "↘️"}</span>
+              <div>
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] font-bold text-white">
+                    {tx.type === "send" ? "Sent" : "Received"}
+                  </span>
+                  <span className="text-[9px] text-white/50">{getChainName(tx.chainId)}</span>
                 </div>
-
-                {/* Details */}
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white">
-                      {tx.type === "send" ? "Sent" : "Received"}
-                    </span>
-                    <span className="text-[10px] text-white/50 bg-white/10 px-1.5 py-0.5 rounded">
-                      {getChainName(tx.chainId)}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-white/60">
-                    {formatDate(tx.date)}
-                  </div>
-                </div>
+                <div className="text-[9px] text-white/50">{formatDate(tx.date)}</div>
               </div>
-
-              {/* Amount & Status */}
-              <div className="text-right">
-                <div
-                  className={`font-bold text-sm ${
-                    tx.type === "send" ? "text-red-300" : "text-green-300"
-                  }`}
-                >
-                  {tx.type === "send" ? "-" : "+"}
-                  {parseFloat(tx.amount).toFixed(4)} {tx.symbol}
-                </div>
-                <div
-                  className={`status-badge inline-block mt-1 ${
-                    tx.status === "confirmed"
-                      ? "status-confirmed"
-                      : tx.status === "pending"
-                      ? "status-pending"
-                      : "status-failed"
-                  }`}
-                >
-                  {tx.status === "pending" ? "⏳ Pending" : tx.status === "confirmed" ? "✓ Done" : "✗ Failed"}
-                </div>
+            </div>
+            <div className="text-right">
+              <div className={`text-[11px] font-bold ${tx.type === "send" ? "text-red-300" : "text-green-300"}`}>
+                {tx.type === "send" ? "-" : "+"}{parseFloat(tx.amount).toFixed(4)} {tx.symbol}
+              </div>
+              <div className={`text-[8px] ${tx.status === "confirmed" ? "text-green-400" : tx.status === "pending" ? "text-yellow-400" : "text-red-400"}`}>
+                {tx.status === "pending" ? "Pending" : tx.status === "confirmed" ? "Done" : "Failed"}
               </div>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
