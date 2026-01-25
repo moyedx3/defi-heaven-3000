@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Fredoka } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Agentation } from "agentation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${fredoka.variable} antialiased`}
       >
         <Providers>{children}</Providers>
+        {process.env.NODE_ENV === "development" && <Agentation />}
       </body>
     </html>
   );
