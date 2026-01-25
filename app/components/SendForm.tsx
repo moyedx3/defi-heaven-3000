@@ -4,27 +4,26 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useSendTransaction, useWaitForTransactionReceipt, useChainId, useSwitchChain, useWriteContract } from "wagmi";
 import { parseEther, parseUnits, isAddress, erc20Abi } from "viem";
 import { mainnet, sepolia, base, arbitrum } from "wagmi/chains";
-import { useAccount as useParaAccount } from "@getpara/react-sdk";
+import { useEvmWallet } from "../hooks/useEvmWallet";
+import { useEthPrice } from "../hooks/useEthPrice";
 import { addPendingTransaction, markTransactionConfirmed } from "../hooks/useTransactionHistory";
 
 interface Token {
   symbol: string;
   name: string;
   decimals: number;
-  address?: `0x${string}`; // Native token (ETH) has no address
   isNative: boolean;
-  // Chain-specific addresses
   addresses?: {
     [chainId: number]: `0x${string}`;
   };
 }
 
 // USDC addresses for different chains
-const USDC_ADDRESSES = {
-  [mainnet.id]: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" as `0x${string}`,
-  [sepolia.id]: "0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8" as `0x${string}`, // Sepolia USDC (may need to verify)
-  [base.id]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as `0x${string}`,
-  [arbitrum.id]: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831" as `0x${string}`,
+const USDC_ADDRESSES: Record<number, `0x${string}`> = {
+  [mainnet.id]: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  [sepolia.id]: "0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8",
+  [base.id]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  [arbitrum.id]: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
 };
 
 const TOKENS: Token[] = [
@@ -55,55 +54,18 @@ export function SendForm() {
   const [amount, setAmount] = useState("");
   const [selectedToken, setSelectedToken] = useState<Token>(TOKENS[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [amountType, setAmountType] = useState<"ETH" | "USD">("ETH"); // Default to ETH
-  const [ethPrice, setEthPrice] = useState<number | null>(null);
-  
-  // Get wallet address from Para SDK
-  const paraAccount = useParaAccount();
-  const walletAddress = useMemo(() => {
-    if (!paraAccount.isConnected || !paraAccount.embedded?.wallets) return null;
-    const wallets = Object.values(paraAccount.embedded.wallets);
-    const evmWallet = wallets.find((w: any) => w.type === "EVM");
-    return evmWallet?.address as `0x${string}` | undefined;
-  }, [paraAccount]);
-  
-  // Store transaction details when submitting so we can add to pending list later
+  const [amountType, setAmountType] = useState<"ETH" | "USD">("ETH");
+
+  const { address: walletAddress } = useEvmWallet();
+  const { ethPrice } = useEthPrice();
+
+  // Store transaction details when submitting
   const pendingTxRef = useRef<{ to: string; amount: string; symbol: string; chainId: number } | null>(null);
-  
+
   const currentChainId = useChainId();
   const { switchChain } = useSwitchChain();
-  
+
   const currentChain = SUPPORTED_CHAINS.find((chain) => chain.id === currentChainId) || SUPPORTED_CHAINS[0];
-
-  // Fetch ETH price in USD
-  useEffect(() => {
-    const fetchEthPrice = async () => {
-      try {
-        const response = await fetch(
-          "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
-          { 
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setEthPrice(data.ethereum?.usd || null);
-      } catch (error) {
-        // Silently fallback to a default price if API fails
-        setEthPrice(2500);
-      }
-    };
-
-    fetchEthPrice();
-    // Refresh price every 30 seconds
-    const interval = setInterval(fetchEthPrice, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Native token transaction (ETH)
   const {
@@ -117,9 +79,7 @@ export function SendForm() {
   const {
     isLoading: isConfirming,
     isSuccess: isConfirmed,
-  } = useWaitForTransactionReceipt({
-    hash,
-  });
+  } = useWaitForTransactionReceipt({ hash });
 
   // ERC20 token transaction (USDC)
   const {
@@ -133,9 +93,7 @@ export function SendForm() {
   const {
     isLoading: isContractConfirming,
     isSuccess: isContractConfirmed,
-  } = useWaitForTransactionReceipt({
-    hash: contractHash,
-  });
+  } = useWaitForTransactionReceipt({ hash: contractHash });
 
   // Use contract transaction if ERC20, otherwise use native
   const isNativeTx = selectedToken.isNative;
@@ -150,20 +108,16 @@ export function SendForm() {
     if (!inputAmount || isNaN(parseFloat(inputAmount)) || parseFloat(inputAmount) <= 0) {
       return "0";
     }
-    
+
     if (amountType === "USD" && ethPrice) {
-      // Convert USD to ETH - ensure we return a fixed decimal string, not scientific notation
       const ethValue = parseFloat(inputAmount) / ethPrice;
-      // Use toFixed with enough precision, then remove trailing zeros
       return ethValue.toFixed(18).replace(/\.?0+$/, "");
     }
-    
-    // Already in ETH - ensure it's not in scientific notation
+
     const ethValue = parseFloat(inputAmount);
     if (isNaN(ethValue) || ethValue <= 0) {
       return "0";
     }
-    // Convert to fixed decimal string to avoid scientific notation
     return ethValue.toFixed(18).replace(/\.?0+$/, "");
   };
 
@@ -171,94 +125,71 @@ export function SendForm() {
     e.preventDefault();
     if (!to || !amount || isSubmitting) return;
 
-    const isValid = isAddress(to);
-    if (!isValid) {
-      return;
-    }
+    if (!isAddress(to)) return;
 
     const amountValue = parseFloat(amount);
-    if (isNaN(amountValue) || amountValue <= 0) {
-      return;
-    }
+    if (isNaN(amountValue) || amountValue <= 0) return;
 
     // For USDC, we can't use USD input type
-    if (!selectedToken.isNative && amountType === "USD") {
-      // Can't convert USD to USDC automatically, user needs to input USDC amount
-      return;
-    }
+    if (!selectedToken.isNative && amountType === "USD") return;
 
     setIsSubmitting(true);
-    
-    // Calculate the actual ETH amount to send
+
     const ethAmount = getEthAmount(amount);
-    const ethAmountValue = parseFloat(ethAmount);
-    
-    if (ethAmountValue <= 0) {
+    if (parseFloat(ethAmount) <= 0) {
       setIsSubmitting(false);
       return;
     }
-    
-    // Store transaction details for later use when hash becomes available
+
     pendingTxRef.current = {
       to,
-      amount: ethAmount, // Store in ETH
+      amount: ethAmount,
       symbol: selectedToken.symbol,
       chainId: currentChainId,
     };
 
     try {
       if (selectedToken.isNative) {
-        // Native token (ETH) transaction
-        if (!sendTransaction) {
-          throw new Error("Send transaction not available");
-        }
+        if (!sendTransaction) throw new Error("Send transaction not available");
         sendTransaction({
           to: to as `0x${string}`,
           value: parseEther(ethAmount),
         });
       } else {
-        // ERC20 token transaction (USDC)
         const tokenAddress = selectedToken.addresses?.[currentChainId];
-        if (!tokenAddress) {
-          throw new Error(`USDC not supported on this network`);
-        }
-        if (!writeContract) {
-          throw new Error("Write contract not available");
-        }
-        
+        if (!tokenAddress) throw new Error(`USDC not supported on this network`);
+        if (!writeContract) throw new Error("Write contract not available");
+
         writeContract({
           address: tokenAddress,
           abi: erc20Abi,
           functionName: "transfer",
-          args: [to as `0x${string}`, parseUnits(amount, selectedToken.decimals)], // For USDC, amount is already in USDC units
+          args: [to as `0x${string}`, parseUnits(amount, selectedToken.decimals)],
         });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Send error:", error);
       setIsSubmitting(false);
       pendingTxRef.current = null;
     }
   };
 
-  // Mark transaction as confirmed when confirmed
+  // Mark transaction as confirmed
   useEffect(() => {
     if (activeIsConfirmed && activeHash && walletAddress) {
-      // Transaction is confirmed, mark it as confirmed immediately
       markTransactionConfirmed(walletAddress, activeHash);
       window.dispatchEvent(new CustomEvent("pendingTransactionAdded"));
     }
-  }, [activeIsConfirmed, activeHash, currentChainId, walletAddress]);
+  }, [activeIsConfirmed, activeHash, walletAddress]);
 
   // Add pending transaction when hash becomes available
   useEffect(() => {
     if (activeHash && !activeIsConfirmed && pendingTxRef.current && walletAddress) {
       const txDetails = pendingTxRef.current;
-      
-      // Check if we've already added this transaction (using wallet-specific key)
       const storageKey = `para_pending_transactions_${walletAddress.toLowerCase()}`;
       const pending = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      const alreadyAdded = pending.some((tx: any) => tx.hash === activeHash);
-      
+      const alreadyAdded = pending.some((tx: { hash: string }) => tx.hash === activeHash);
+
       if (!alreadyAdded) {
         addPendingTransaction(walletAddress, {
           hash: activeHash as `0x${string}`,
@@ -269,9 +200,7 @@ export function SendForm() {
           type: "send",
           timestamp: Math.floor(Date.now() / 1000),
         });
-        // Trigger a custom event to notify transaction list
         window.dispatchEvent(new CustomEvent("pendingTransactionAdded"));
-        // Clear the ref after adding
         pendingTxRef.current = null;
       }
     }
@@ -295,38 +224,25 @@ export function SendForm() {
     }
   }, [isConfirmed, isContractConfirmed, activeHash, isNativeTx, resetNativeTx, resetContractTx]);
 
-  // Get token address for current chain
-  const getTokenAddress = (token: Token): string | undefined => {
-    if (token.isNative) return undefined;
-    return token.addresses?.[currentChainId];
-  };
-
   // Check if token is available on current chain
-  const isTokenAvailable = selectedToken.isNative || !!getTokenAddress(selectedToken);
+  const isTokenAvailable = selectedToken.isNative || !!selectedToken.addresses?.[currentChainId];
 
   const isValidAddress = to.length === 42 && isAddress(to);
-  const isValidAmount =
-    amount &&
-    !isNaN(parseFloat(amount)) &&
-    parseFloat(amount) > 0;
-  
-  // Additional validation for USD input
+  const isValidAmount = amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0;
   const canSubmitWithUsd = selectedToken.isNative && amountType === "USD" ? ethPrice !== null : true;
 
   // Calculate equivalent amount for display
   const displayEquivalent = useMemo(() => {
     if (!amount || !isValidAmount) return null;
-    
+
     if (amountType === "USD" && selectedToken.isNative && ethPrice) {
-      // Show ETH equivalent when typing USD
       const ethAmount = parseFloat(amount) / ethPrice;
       return `${ethAmount.toFixed(6)} ETH`;
     } else if (amountType === "ETH" && selectedToken.isNative && ethPrice) {
-      // Show USD equivalent when typing ETH
       const usdAmount = parseFloat(amount) * ethPrice;
       return `$${usdAmount.toFixed(2)}`;
     }
-    
+
     return null;
   }, [amount, amountType, selectedToken.isNative, ethPrice, isValidAmount]);
 
@@ -334,9 +250,8 @@ export function SendForm() {
 
   return (
     <div className="relative anime-card rounded-2xl p-4 overflow-hidden">
-      {/* Decorative elements */}
       <div className="absolute top-2 right-2 text-lg">💸</div>
-      
+
       <h2 className="mb-3 anime-title text-lg relative z-10">
         Send ♥
       </h2>
@@ -354,9 +269,7 @@ export function SendForm() {
             value={currentChainId}
             onChange={(e) => {
               const chainId = parseInt(e.target.value);
-              if (switchChain) {
-                switchChain({ chainId });
-              }
+              if (switchChain) switchChain({ chainId });
             }}
             className="w-full rounded-xl border-2 border-white bg-white/90 px-3 py-2 text-sm font-bold text-pink-600 transition-all focus:border-pink-400 focus:outline-none"
             disabled={isLoading || !switchChain}
@@ -384,17 +297,14 @@ export function SendForm() {
               const token = TOKENS.find((t) => t.symbol === e.target.value);
               if (token) {
                 setSelectedToken(token);
-                // Reset amount type if switching to USDC (can't use USD input for USDC)
-                if (!token.isNative) {
-                  setAmountType("ETH"); // USDC uses its own units
-                }
+                if (!token.isNative) setAmountType("ETH");
               }
             }}
             className="w-full rounded-xl border-2 border-white bg-white/90 px-3 py-2 text-sm font-bold text-pink-600 transition-all focus:border-pink-400 focus:outline-none"
             disabled={isLoading}
           >
             {TOKENS.map((token) => {
-              const available = token.isNative || !!getTokenAddress(token);
+              const available = token.isNative || !!token.addresses?.[currentChainId];
               return (
                 <option key={token.symbol} value={token.symbol} disabled={!available}>
                   {token.name} ({token.symbol}){!available ? " - Not available on this network" : ""}
@@ -511,11 +421,11 @@ export function SendForm() {
         <button
           type="submit"
           disabled={
-            !isValidAddress || 
-            !isValidAmount || 
-            isLoading || 
-            !isTokenAvailable || 
-            (!sendTransaction && !writeContract) || 
+            !isValidAddress ||
+            !isValidAmount ||
+            isLoading ||
+            !isTokenAvailable ||
+            (!sendTransaction && !writeContract) ||
             !canSubmitWithUsd
           }
           className="w-full anime-button rounded-xl px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"

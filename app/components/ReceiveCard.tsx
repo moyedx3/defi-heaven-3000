@@ -1,18 +1,11 @@
 "use client";
 
-import { useAccount as useParaAccount } from "@getpara/react-sdk";
 import { QRCodeSVG } from "qrcode.react";
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { useEvmWallet } from "../hooks/useEvmWallet";
 
 export function ReceiveCard() {
-  const paraAccount = useParaAccount();
-  const evmWallet = useMemo(() => {
-    if (!paraAccount.isConnected || !paraAccount.embedded?.wallets) return null;
-    const wallets = Object.values(paraAccount.embedded.wallets);
-    return wallets.find((w: any) => w.type === "EVM");
-  }, [paraAccount]);
-
-  const address = evmWallet?.address;
+  const { address } = useEvmWallet();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -32,9 +25,8 @@ export function ReceiveCard() {
 
   return (
     <div className="relative anime-card rounded-2xl p-4 overflow-hidden">
-      {/* Decorative elements */}
       <div className="absolute top-2 right-2 text-lg">📱</div>
-      
+
       <div className="flex flex-col items-center gap-4 relative z-10">
         <div className="rounded-xl border-3 border-white bg-white p-3">
           <QRCodeSVG value={address} size={160} level="H" />
@@ -63,4 +55,3 @@ export function ReceiveCard() {
     </div>
   );
 }
-

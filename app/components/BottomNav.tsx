@@ -1,21 +1,23 @@
 "use client";
 
+export type ViewType = "home" | "receive" | "history";
+
 interface BottomNavProps {
-  currentView: string;
-  onViewChange: (view: string) => void;
+  currentView: ViewType;
+  onViewChange: (view: ViewType) => void;
 }
 
-export function BottomNav({ currentView, onViewChange }: BottomNavProps) {
-  const navItems = [
-    { id: "home", label: "Home", icon: "🏠" },
-    { id: "receive", label: "Receive", icon: "♥" },
-    { id: "history", label: "History", icon: "📜" },
-  ];
+const NAV_ITEMS: Array<{ id: ViewType; label: string; icon: string }> = [
+  { id: "home", label: "Home", icon: "🏠" },
+  { id: "receive", label: "Receive", icon: "♥" },
+  { id: "history", label: "History", icon: "📜" },
+];
 
+export function BottomNav({ currentView, onViewChange }: BottomNavProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-white bg-gradient-to-t from-[#d4145a] to-[#ff69b4] safe-area-inset-bottom">
       <div className="mx-auto flex max-w-md items-center justify-around px-2 py-2">
-        {navItems.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <button
             key={item.id}
             onClick={() => onViewChange(item.id)}

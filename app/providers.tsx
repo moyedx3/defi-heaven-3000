@@ -56,13 +56,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 },
                 border: "#ffb6c1",
               },
-              button: {
-                primary: {
-                  background: "linear-gradient(180deg, #ff69b4 0%, #d4145a 100%)",
-                  hover: "#ff1493",
-                  text: "#ffffff",
-                },
-              },
             },
           },
           oAuthMethods: ["GOOGLE", "TWITTER", "DISCORD", "APPLE"],

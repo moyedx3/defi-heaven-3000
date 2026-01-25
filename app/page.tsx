@@ -5,13 +5,13 @@ import { useAccount } from "@getpara/react-sdk";
 import { HomeView } from "./components/HomeView";
 import { ReceiveView } from "./components/ReceiveView";
 import { HistoryView } from "./components/HistoryView";
-import { BottomNav } from "./components/BottomNav";
+import { BottomNav, ViewType } from "./components/BottomNav";
 import { AnimeBackground } from "./components/AnimeBackground";
 import { useModal } from "@getpara/react-sdk";
 import Image from "next/image";
 
 export default function Home() {
-  const [currentView, setCurrentView] = useState("home");
+  const [currentView, setCurrentView] = useState<ViewType>("home");
   const { isConnected } = useAccount();
   const { openModal } = useModal();
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { useTransactionHistory, addPendingTransaction } from "../hooks/useTransactionHistory";
-import { useMemo } from "react";
 import { mainnet, base, arbitrum, sepolia } from "wagmi/chains";
 
 function getExplorerUrl(chainId: number, txHash: string): string {
@@ -17,10 +16,6 @@ function getExplorerUrl(chainId: number, txHash: string): string {
     default:
       return `https://etherscan.io/tx/${txHash}`;
   }
-}
-
-function formatAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 function formatDate(timestamp: string | number): string {

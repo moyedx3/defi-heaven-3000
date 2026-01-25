@@ -1,9 +1,10 @@
 "use client";
 
-import { useAccount as useParaAccount } from "@getpara/react-sdk";
 import { useBalance } from "wagmi";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { mainnet, base, sepolia, arbitrum } from "wagmi/chains";
+import { useEvmWallet } from "../hooks/useEvmWallet";
+import { useEthPrice } from "../hooks/useEthPrice";
 
 interface ChainBalance {
   chainId: number;
@@ -16,47 +17,9 @@ interface ChainBalance {
 }
 
 export function BalanceCard() {
-  const paraAccount = useParaAccount();
+  const { address: walletAddress, isConnected } = useEvmWallet();
+  const { ethPrice } = useEthPrice();
   const [showDetails, setShowDetails] = useState(false);
-  const [ethPrice, setEthPrice] = useState<number | null>(null);
-  
-  const evmWallet = useMemo(() => {
-    if (!paraAccount.isConnected || !paraAccount.embedded?.wallets) return null;
-    const wallets = Object.values(paraAccount.embedded.wallets);
-    return wallets.find((w: any) => w.type === "EVM");
-  }, [paraAccount]);
-
-  const walletAddress = evmWallet?.address as `0x${string}` | undefined;
-
-  // Fetch ETH price in USD
-  useEffect(() => {
-    const fetchEthPrice = async () => {
-      try {
-        const response = await fetch(
-          "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
-          { 
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setEthPrice(data.ethereum?.usd || null);
-      } catch (error) {
-        // Silently fallback to a default price if API fails
-        setEthPrice(2500);
-      }
-    };
-
-    fetchEthPrice();
-    // Refresh price every 30 seconds
-    const interval = setInterval(fetchEthPrice, 30000);
-    return () => clearInterval(interval);
-  }, []);
 
   const mainnetBalance = useBalance({
     address: walletAddress,
@@ -144,23 +107,9 @@ export function BalanceCard() {
       chainBalances: balances,
       isLoading: loading,
     };
-  }, [
-    mainnetBalance.data,
-    mainnetBalance.isLoading,
-    mainnetBalance.isError,
-    baseBalance.data,
-    baseBalance.isLoading,
-    baseBalance.isError,
-    arbitrumBalance.data,
-    arbitrumBalance.isLoading,
-    arbitrumBalance.isError,
-    sepoliaBalance.data,
-    sepoliaBalance.isLoading,
-    sepoliaBalance.isError,
-    ethPrice,
-  ]);
+  }, [mainnetBalance, baseBalance, arbitrumBalance, sepoliaBalance, ethPrice]);
 
-  if (!paraAccount.isConnected || !walletAddress) {
+  if (!isConnected || !walletAddress) {
     return null;
   }
 
@@ -181,7 +130,7 @@ export function BalanceCard() {
     <div className="relative overflow-hidden anime-card rounded-2xl">
       {/* Decorative elements */}
       <div className="absolute top-2 right-2 text-lg">✨</div>
-      
+
       <div className="p-4 relative z-10">
         <div className="mb-2 flex items-center justify-between">
           <div className="anime-subtitle text-xs uppercase tracking-wider">

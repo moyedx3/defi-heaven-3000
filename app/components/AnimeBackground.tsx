@@ -2,10 +2,8 @@
 
 import Image from "next/image";
 
-// Character images (transparent PNGs)
 const CHARACTER_IMAGES = ["/char-main.png", "/char-1.png", "/char-2.png"];
 
-// Decorative heart SVG
 const HeartSVG = ({ color = "#ff69b4" }: { color?: string }) => (
   <svg viewBox="0 0 24 24" className="w-full h-full">
     <path
@@ -16,17 +14,27 @@ const HeartSVG = ({ color = "#ff69b4" }: { color?: string }) => (
   </svg>
 );
 
-// Generate pattern for decorative elements
-const generateDecoPattern = () => {
-  const items: Array<{
-    id: string;
-    x: number;
-    y: number;
-    rotation: number;
-    scale: number;
-    color: string;
-  }> = [];
+interface DecoItem {
+  id: string;
+  x: number;
+  y: number;
+  rotation: number;
+  scale: number;
+  color: string;
+}
 
+interface CharItem {
+  id: string;
+  charIndex: number;
+  x: number;
+  y: number;
+  rotation: number;
+  scale: number;
+}
+
+// Pre-computed patterns (computed once at module load, not on every render)
+const DECO_ITEMS: DecoItem[] = (() => {
+  const items: DecoItem[] = [];
   const spacing = 200;
   const rows = 10;
   const cols = 8;
@@ -46,19 +54,10 @@ const generateDecoPattern = () => {
     }
   }
   return items;
-};
+})();
 
-// Generate pattern for character images
-const generateCharacterPattern = () => {
-  const items: Array<{
-    id: string;
-    charIndex: number;
-    x: number;
-    y: number;
-    rotation: number;
-    scale: number;
-  }> = [];
-
+const CHAR_ITEMS: CharItem[] = (() => {
+  const items: CharItem[] = [];
   const spacing = 400;
   const rows = 6;
   const cols = 5;
@@ -77,16 +76,23 @@ const generateCharacterPattern = () => {
     }
   }
   return items;
-};
+})();
+
+const FLOATING_HEARTS = Array.from({ length: 12 }, (_, i) => ({
+  id: `heart-${i}`,
+  left: `${8 + i * 8}%`,
+  top: `${5 + (i % 4) * 25}%`,
+  fontSize: 16 + (i % 3) * 8,
+  rotation: -10 + i * 5,
+  animationDuration: `${12 + i * 2}s`,
+  animationDelay: `${i * 0.5}s`,
+}));
 
 export function AnimeBackground() {
-  const decoItems = generateDecoPattern();
-  const charItems = generateCharacterPattern();
-
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
       {/* Soft pink gradient base */}
-      <div 
+      <div
         className="absolute inset-0"
         style={{
           background: "linear-gradient(180deg, #ffe8ed 0%, #ffd6e0 50%, #ffc8d6 100%)",
@@ -94,7 +100,7 @@ export function AnimeBackground() {
       />
 
       {/* Tilted character pattern layer */}
-      <div 
+      <div
         className="absolute pointer-events-none"
         style={{
           top: "-15%",
@@ -104,7 +110,7 @@ export function AnimeBackground() {
           transform: "rotate(-8deg)",
         }}
       >
-        {charItems.map((item) => (
+        {CHAR_ITEMS.map((item) => (
           <div
             key={item.id}
             className="absolute pointer-events-none"
@@ -127,9 +133,9 @@ export function AnimeBackground() {
           </div>
         ))}
       </div>
-      
+
       {/* Hearts overlay pattern */}
-      <div 
+      <div
         className="absolute pointer-events-none"
         style={{
           top: "-10%",
@@ -139,7 +145,7 @@ export function AnimeBackground() {
           transform: "rotate(-5deg)",
         }}
       >
-        {decoItems.map((item) => (
+        {DECO_ITEMS.map((item) => (
           <div
             key={item.id}
             className="absolute pointer-events-none"
@@ -159,18 +165,18 @@ export function AnimeBackground() {
 
       {/* Floating hearts overlay */}
       <div className="absolute inset-0">
-        {[...Array(12)].map((_, i) => (
+        {FLOATING_HEARTS.map((heart) => (
           <div
-            key={`heart-${i}`}
+            key={heart.id}
             className="absolute pointer-events-none text-pink-300"
             style={{
-              left: `${8 + i * 8}%`,
-              top: `${5 + (i % 4) * 25}%`,
-              fontSize: 16 + (i % 3) * 8,
+              left: heart.left,
+              top: heart.top,
+              fontSize: heart.fontSize,
               opacity: 0.15,
-              transform: `rotate(${-10 + i * 5}deg)`,
-              animation: `floatSlow ${12 + i * 2}s ease-in-out infinite`,
-              animationDelay: `${i * 0.5}s`,
+              transform: `rotate(${heart.rotation}deg)`,
+              animation: `floatSlow ${heart.animationDuration} ease-in-out infinite`,
+              animationDelay: heart.animationDelay,
             }}
           >
             ♥
@@ -179,7 +185,7 @@ export function AnimeBackground() {
       </div>
 
       {/* Subtle diagonal lines overlay */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.02]"
         style={{
           backgroundImage: `repeating-linear-gradient(
@@ -194,4 +200,3 @@ export function AnimeBackground() {
     </div>
   );
 }
-
