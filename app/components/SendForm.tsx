@@ -161,11 +161,9 @@ export function SendForm() {
 
   return (
     <div className="anime-card rounded-2xl p-3 h-full flex flex-col">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="anime-subtitle text-sm font-bold">💸 Send</h2>
-      </div>
+      <h2 className="text-xs font-bold text-white/90 mb-2">💸 Send</h2>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2 flex-1">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-1.5 flex-1">
         {/* Network & Token Row */}
         <div className="grid grid-cols-2 gap-2">
           <div>

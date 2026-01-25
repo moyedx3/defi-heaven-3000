@@ -5,7 +5,7 @@ import { useAccount } from "@getpara/react-sdk";
 import { HomeView } from "./components/HomeView";
 import { ReceiveView } from "./components/ReceiveView";
 import { HistoryView } from "./components/HistoryView";
-import { BottomNav, ViewType } from "./components/BottomNav";
+import { ViewType } from "./components/BottomNav";
 import { AnimeBackground } from "./components/AnimeBackground";
 import { useModal } from "@getpara/react-sdk";
 import Image from "next/image";
@@ -127,24 +127,30 @@ export default function Home() {
 
   const { src: characterSrc, emoji: characterEmoji } = characterConfig[currentView];
 
+  const NAV_ITEMS: Array<{ id: ViewType; label: string; icon: string }> = [
+    { id: "home", label: "Home", icon: "🏠" },
+    { id: "receive", label: "Receive", icon: "📥" },
+    { id: "history", label: "History", icon: "📜" },
+  ];
+
   return (
     <>
       <AnimeBackground />
-      <div className="min-h-screen relative z-10 overflow-hidden">
+      <div className="min-h-screen relative z-10 overflow-hidden flex items-center justify-center">
         {/* Floating decorative elements */}
         <div className="fixed top-4 right-4 text-2xl animate-sparkle opacity-40 pointer-events-none">✨</div>
         <div className="fixed top-20 left-4 text-xl floating-heart opacity-30 pointer-events-none">💕</div>
 
         {/* Character peeking from bottom-right */}
         <div
-          className="fixed bottom-16 right-0 z-30 transition-all duration-500 cursor-pointer group"
+          className="fixed bottom-4 right-0 z-30 transition-all duration-500 cursor-pointer group"
           style={{ transform: 'translateX(30%)' }}
         >
           <Image
             src={characterSrc}
             alt=""
-            width={140}
-            height={190}
+            width={120}
+            height={160}
             className="object-contain transition-all duration-300 ease-out group-hover:scale-110 group-hover:-translate-x-6"
             style={{
               filter: 'drop-shadow(-6px 0 20px rgba(212,20,90,0.5))',
@@ -155,14 +161,35 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="mx-auto max-w-md">
-          <main className="animate-slide-up">
-            {currentView === "home" && <HomeView />}
-            {currentView === "receive" && <ReceiveView />}
-            {currentView === "history" && <HistoryView />}
+        <div className="mx-auto max-w-md w-full px-3">
+          <main className="animate-slide-up wallet-container rounded-2xl overflow-hidden">
+            {/* Inline Tab Navigation */}
+            <nav className="tab-nav flex items-center justify-around px-2 py-2">
+              {NAV_ITEMS.map((item) => {
+                const isActive = currentView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setCurrentView(item.id)}
+                    className={`tab-item flex items-center gap-1.5 rounded-xl px-4 py-2 text-sm font-bold transition-all ${
+                      isActive ? "tab-item-active" : "text-white/70 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    <span className={isActive ? "animate-pulse" : ""}>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Content */}
+            <div className="wallet-content">
+              {currentView === "home" && <HomeView />}
+              {currentView === "receive" && <ReceiveView />}
+              {currentView === "history" && <HistoryView />}
+            </div>
           </main>
         </div>
-        <BottomNav currentView={currentView} onViewChange={setCurrentView} />
       </div>
     </>
   );

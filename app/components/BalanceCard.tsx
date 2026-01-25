@@ -127,66 +127,18 @@ export function BalanceCard() {
       });
 
   return (
-    <div className="relative overflow-hidden anime-card rounded-2xl">
-      {/* Decorative elements */}
-      <div className="absolute top-2 right-2 text-lg">✨</div>
-
-      <div className="p-4 relative z-10">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="anime-subtitle text-xs uppercase tracking-wider">
-            💰 Balance
-          </div>
-          <button
-            onClick={() => setShowDetails(!showDetails)}
-            className="text-[10px] font-bold text-white bg-white/20 px-2 py-0.5 rounded-full hover:bg-white/30 transition-all"
-          >
-            {showDetails ? "Hide" : "Show"} ♥
-          </button>
+    <div className="flex-1">
+      <div className="text-[10px] text-white/70 uppercase tracking-wider mb-0.5">Balance</div>
+      {isLoading ? (
+        <div className="h-6 w-24 animate-pulse rounded bg-white/30" />
+      ) : (
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-xl font-bold text-white">{formattedTotal}</span>
+          {totalUsdValue && (
+            <span className="text-xs text-white/70">{totalBalance.toFixed(4)} ETH</span>
+          )}
         </div>
-      <div className="flex items-baseline gap-2">
-        {isLoading ? (
-          <div className="h-8 w-32 animate-pulse rounded bg-white/30" />
-        ) : (
-          <>
-            <div className="anime-title text-3xl">
-              {formattedTotal}
-            </div>
-            {totalUsdValue && (
-              <div className="anime-subtitle text-sm">
-                {totalBalance.toFixed(4)} ETH
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-        {showDetails && (
-          <div className="mt-3 space-y-2 border-t border-white/30 pt-3">
-            {chainBalances.map((chain) => (
-              <div
-                key={chain.chainId}
-                className="flex items-center justify-between bg-white/10 rounded-lg px-2 py-1.5"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="text-sm">♥</div>
-                  <div className="text-xs font-bold text-white">
-                    {chain.chainName}
-                  </div>
-                </div>
-                <div className="text-right">
-                  {chain.isLoading ? (
-                    <div className="h-3 w-16 animate-pulse rounded bg-white/30" />
-                  ) : (
-                    <div className="text-xs font-bold text-white">
-                      {chain.usdValue ? `$${chain.usdValue.toFixed(2)}` : "$0.00"}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
