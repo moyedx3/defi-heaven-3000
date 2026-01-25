@@ -458,6 +458,25 @@ body {
   opacity: 0.6;
 }
 
+/* Character hover effects - smooth scale */
+.char-hover {
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.6s ease;
+}
+
+.group:hover .char-hover {
+  transform: scale(1.15) translateY(-10px);
+  filter: drop-shadow(0 0 40px rgba(255, 105, 180, 0.7)) !important;
+}
+
+.char-hover-peek {
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.6s ease;
+}
+
+.group:hover .char-hover-peek {
+  transform: scale(1.2) translateX(-15px);
+  filter: drop-shadow(-8px 0 30px rgba(255, 105, 180, 0.8)) !important;
+}
+
 /* Corner Decorations */
 .corner-deco {
   position: absolute;

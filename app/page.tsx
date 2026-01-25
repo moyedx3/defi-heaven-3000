@@ -34,13 +34,13 @@ export default function Home() {
               alt=""
               width={320}
               height={420}
-              className="object-contain transition-all duration-500 ease-out group-hover:scale-105 group-hover:-translate-y-3"
+              className="char-hover object-contain"
               style={{
                 filter: 'drop-shadow(0 0 30px rgba(255,105,180,0.5))',
               }}
               priority
             />
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-3xl opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-2">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:-translate-y-2">
               💖
             </div>
           </div>
@@ -52,14 +52,14 @@ export default function Home() {
               alt=""
               width={300}
               height={400}
-              className="object-contain transition-all duration-500 ease-out group-hover:scale-105 group-hover:-translate-y-3"
+              className="char-hover object-contain"
               style={{
                 filter: 'drop-shadow(0 0 30px rgba(255,105,180,0.5))',
                 transform: 'scaleX(-1)',
               }}
               priority
             />
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-3xl opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-2">
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 text-3xl opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:-translate-y-2">
               ✨
             </div>
           </div>
@@ -143,7 +143,7 @@ export default function Home() {
 
         {/* Character peeking from bottom-right */}
         <div
-          className="fixed bottom-4 right-0 z-30 transition-all duration-500 cursor-pointer group"
+          className="fixed bottom-4 right-0 z-30 cursor-pointer group"
           style={{ transform: 'translateX(30%)' }}
         >
           <Image
@@ -151,12 +151,12 @@ export default function Home() {
             alt=""
             width={120}
             height={160}
-            className="object-contain transition-all duration-300 ease-out group-hover:scale-110 group-hover:-translate-x-6"
+            className="char-hover-peek object-contain"
             style={{
               filter: 'drop-shadow(-6px 0 20px rgba(212,20,90,0.5))',
             }}
           />
-          <div className="absolute -top-2 left-2 text-xl opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:-translate-y-1">
+          <div className="absolute -top-2 left-2 text-xl opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:-translate-y-1">
             {characterEmoji}
           </div>
         </div>
