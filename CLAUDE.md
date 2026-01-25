@@ -26,6 +26,38 @@ Get a BETA key from https://developer.getpara.com
 - Phone: `(xxx)-555-xxxx` (e.g., `(425)-555-1234`)
 - Any OTP code works (e.g., `123456`)
 
+## Para SDK Documentation
+
+Full Para documentation is available in `llm.txt` (1.2MB). Key reference:
+
+### Para Architecture
+- **MPC (Multi-Party Computation)**: 2-of-2 key system - User Share + Cloud Share
+- **Passkey**: Separate key using hardware secure enclaves for biometric auth
+- **DKG (Distributed Key Generation)**: Private key never assembled in single location
+- Sessions default to 90 minutes
+
+### Key Para Hooks (@getpara/react-sdk)
+| Hook | Purpose |
+|------|---------|
+| `useAccount` | Get wallet connection status, address, embedded wallets |
+| `useModal` | Control Para authentication modal (`openModal()`, `closeModal()`) |
+| `useParaClient` | Access Para client instance directly |
+
+### Wagmi Integration
+Para automatically creates and manages the Wagmi provider internally when `externalWalletConfig.evmConnector` is configured. All wagmi hooks work seamlessly:
+- `useSendTransaction` - Send native token (ETH)
+- `useWriteContract` - Call contract functions (ERC20 transfers)
+- `useWaitForTransactionReceipt` - Track tx confirmation
+- `useBalance` - Get token balances
+- `useSwitchChain` - Switch networks
+
+### Supported Auth Methods
+OAuth: Google, Twitter/X, Discord, Apple, Facebook
+Also: Email, Phone (with OTP)
+
+### Supported Chains
+EVM-compatible chains, Cosmos ecosystem, Solana (via separate connectors)
+
 ## Architecture Overview
 
 This is a Next.js 16 crypto wallet app using the Para SDK for MPC wallet management with multi-chain EVM support.
@@ -40,7 +72,7 @@ QueryClientProvider (React Query)
         └── Chains: Ethereum, Base, Arbitrum, Sepolia
 ```
 
-Para SDK handles all transaction signing via MPC - no private keys are exposed. The app uses wagmi hooks (`useSendTransaction`, `useWriteContract`, etc.) which Para intercepts for MPC signing.
+Para SDK handles all transaction signing via MPC - no private keys are exposed. The app uses wagmi hooks which Para intercepts for MPC signing.
 
 ### Transaction Flow
 
@@ -48,19 +80,24 @@ Para SDK handles all transaction signing via MPC - no private keys are exposed. 
 2. App gets wallet address from `useAccount` hook (via Para's embedded wallets)
 3. Transactions sent via wagmi hooks → Para handles MPC signing
 4. Pending txs stored in localStorage keyed by wallet address
-5. `useTransactionHistory` polls blockchain explorers every 3 seconds
+5. `useTransactionHistory` polls blockchain explorers every 15 seconds
 6. When tx appears in explorer, moves from pending → confirmed
 7. After 1 hour, confirmed txs removed from localStorage (indexed by explorer)
 
+### Shared Hooks (`app/hooks/`)
+
+| Hook | Purpose |
+|------|---------|
+| `useEvmWallet` | Extract EVM wallet from Para account (address, isConnected) |
+| `useEthPrice` | Single source for ETH/USD price (CoinGecko, 30s refresh) |
+| `useTransactionHistory` | Multi-chain tx history with localStorage persistence |
+
 ### Key Patterns
 
-**Getting the EVM wallet address:**
+**Getting the EVM wallet address (use shared hook):**
 ```tsx
-const paraAccount = useParaAccount();
-const evmWallet = paraAccount.embedded?.wallets
-  ? Object.values(paraAccount.embedded.wallets).find(w => w.type === "EVM")
-  : null;
-const address = evmWallet?.address;
+import { useEvmWallet } from "./hooks/useEvmWallet";
+const { address, isConnected } = useEvmWallet();
 ```
 
 **Transaction history persistence:**
