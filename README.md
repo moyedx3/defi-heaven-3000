@@ -1,19 +1,54 @@
-# Para Wallet App 💖
+# DeFi Heaven 3000 💖
 
-A beautiful anime-styled crypto wallet built with Next.js and Para SDK, featuring a Tax Heaven 3000-inspired design.
+A beautiful anime-styled crypto wallet built with Next.js and Para SDK, inspired by visual novel aesthetics.
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black)
-![Para SDK](https://img.shields.io/badge/Para%20SDK-React-ff69b4)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![Para SDK](https://img.shields.io/badge/Para%20SDK-2.6.0-ff69b4)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![Tailwind](https://img.shields.io/badge/Tailwind-4-38bdf8)
 
-## ✨ Features
+---
 
-- **Multi-chain Support**: Ethereum Mainnet, Sepolia, Arbitrum, Base
+## ✨ Current Features (Phase 1)
+
+- **Multi-chain Support**: Ethereum, Sepolia, Base, Arbitrum
+- **Portfolio View**: Aggregated balance across all chains with breakdown toggle
 - **Send Crypto**: ETH and USDC with real-time USD conversion
 - **Receive**: QR code generation for easy deposits
-- **Transaction History**: Real-time status tracking with blockchain explorer links
+- **Transaction History**: Real-time status tracking with explorer links
 - **MPC Wallet**: Secure embedded wallet via Para SDK
 - **OAuth Login**: Google, Twitter, Discord, Apple + Email/Phone
+- **Compact UI**: 70vh wallet container with inline tab navigation
+
+---
+
+## 🗺️ Roadmap
+
+### Phase 1: Core Wallet (Completed)
+- [x] Para SDK integration with MPC wallet
+- [x] Multi-chain balance display
+- [x] Send ETH/USDC transactions
+- [x] Receive with QR code
+- [x] Transaction history with status
+- [x] Visual novel themed UI
+
+### Phase 2: Swap (Planned)
+- [ ] 0x or 1inch API integration
+- [ ] Token swap interface
+- [ ] Best route finding across DEXs
+- [ ] Slippage settings
+
+### Phase 3: DeFi / Lending (Planned)
+- [ ] Aave v3 integration ([Para Aave Walkthrough](https://docs.getpara.com/v2/walkthroughs/aave))
+- [ ] Supply/deposit assets
+- [ ] Borrow against collateral
+- [ ] APY display
+
+### Phase 4: Advanced Features (Future)
+- [ ] Token portfolio tracking
+- [ ] Price alerts
+- [ ] NFT display
+- [ ] Cross-chain bridging
 
 ---
 
@@ -22,32 +57,47 @@ A beautiful anime-styled crypto wallet built with Next.js and Para SDK, featurin
 ```
 my-para-app/
 ├── app/
-│   ├── layout.tsx              # Root layout with font loading
-│   ├── page.tsx                # Main page with view routing
-│   ├── providers.tsx           # Para SDK + React Query setup
-│   ├── globals.css             # Anime-style theme & animations
+│   ├── layout.tsx              # Root layout with fonts
+│   ├── page.tsx                # Main page with tab routing
+│   ├── providers.tsx           # Para SDK + wagmi setup
+│   ├── globals.css             # Anime theme & animations
 │   │
 │   ├── components/
-│   │   ├── AnimeBackground.tsx # Animated background with characters
-│   │   ├── HomeView.tsx        # Balance + Send form view
-│   │   ├── ReceiveView.tsx     # QR code receive view
-│   │   ├── HistoryView.tsx     # Transaction history view
-│   │   ├── BalanceCard.tsx     # Multi-chain balance display
+│   │   ├── AnimeBackground.tsx # Animated background
+│   │   ├── HomeView.tsx        # Balance + Send view
+│   │   ├── ReceiveView.tsx     # QR code view
+│   │   ├── HistoryView.tsx     # Transaction history
+│   │   ├── BalanceCard.tsx     # Multi-chain balance
 │   │   ├── SendForm.tsx        # Token transfer form
 │   │   ├── ReceiveCard.tsx     # Address + QR display
-│   │   ├── TransactionList.tsx # Transaction list with status
-│   │   └── BottomNav.tsx       # Tab navigation
+│   │   ├── TransactionList.tsx # Transaction list
+│   │   └── BottomNav.tsx       # ViewType export
 │   │
 │   └── hooks/
-│       └── useTransactionHistory.ts  # Transaction state management
+│       ├── useTransactionHistory.ts  # Tx state management
+│       ├── useEvmWallet.ts           # Shared wallet hook
+│       └── useEthPrice.ts            # ETH price from CoinGecko
 │
 ├── public/
-│   ├── char-main.png           # Main anime character
-│   ├── char-1.png              # Character variant 1
-│   └── char-2.png              # Character variant 2
+│   ├── char-main.png           # Main character
+│   ├── char-1.png              # Character variant
+│   └── char-2.png              # Character variant
 │
 └── .env.local                  # API keys (not in repo)
 ```
+
+---
+
+## 🔧 Tech Stack
+
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript 5 |
+| Styling | Tailwind CSS 4 |
+| Wallet SDK | Para SDK 2.6.0 |
+| EVM Library | wagmi + viem |
+| State | React Query (TanStack) |
 
 ---
 
@@ -55,85 +105,26 @@ my-para-app/
 
 ### What is Para?
 
-[Para](https://getpara.com) provides MPC (Multi-Party Computation) wallets that enable secure, embedded wallet experiences without users managing private keys.
+[Para](https://getpara.com) provides MPC (Multi-Party Computation) wallets - secure embedded wallets without users managing private keys.
 
-### Setup in `providers.tsx`
-
-```tsx
-import { ParaProvider } from "@getpara/react-sdk";
-import "@getpara/react-sdk/styles.css";
-
-<ParaProvider
-  paraClientConfig={{
-    apiKey: process.env.NEXT_PUBLIC_PARA_API_KEY || "",
-  }}
-  config={{
-    appName: "Para Wallet",
-  }}
-  externalWalletConfig={{
-    evmConnector: {
-      config: {
-        chains: [mainnet, base, arbitrum, sepolia],
-        transports: {
-          [mainnet.id]: http(),
-          [base.id]: http(),
-          [arbitrum.id]: http(),
-          [sepolia.id]: http(),
-        },
-      },
-    },
-  }}
-  paraModalConfig={{
-    logo: "/char-main.png",
-    theme: {
-      foregroundColor: "#d4145a",
-      backgroundColor: "#ffe4ec",
-      accentColor: "#ff69b4",
-      mode: "light",
-      // ... custom palette
-    },
-    oAuthMethods: ["GOOGLE", "TWITTER", "DISCORD", "APPLE"],
-  }}
->
-  {children}
-</ParaProvider>
-```
-
-### Key Para Hooks Used
+### Key Hooks
 
 | Hook | Purpose |
 |------|---------|
-| `useAccount` | Get wallet connection status & address |
-| `useModal` | Open/close Para authentication modal |
-| `useBalance` | Fetch native token balance per chain |
+| `useAccount` | Wallet connection status & embedded wallet data |
+| `useModal` | Open/close Para auth modal |
+| `useBalance` | Native token balance per chain |
 | `useSendTransaction` | Send ETH transactions |
-| `useWriteContract` | Send ERC20 token transactions |
-| `useWaitForTransactionReceipt` | Track transaction confirmation |
-| `useSwitchChain` | Switch between networks |
+| `useWriteContract` | ERC20 token transactions |
+| `useSwitchChain` | Network switching |
 
-### Authentication Flow
+### Custom Hooks
 
-1. User clicks "Connect Wallet"
-2. `openModal()` opens Para's auth modal
-3. User authenticates via OAuth or Email/Phone
-4. Para creates MPC wallet automatically
-5. App receives wallet address via `useAccount`
-
-### Transaction Signing
-
-Para handles all transaction signing via MPC - no private keys are ever exposed:
-
-```tsx
-import { useSendTransaction } from "wagmi";
-
-const { sendTransaction } = useSendTransaction();
-
-// Para SDK intercepts this and handles MPC signing
-sendTransaction({
-  to: recipientAddress,
-  value: parseEther(amount),
-});
-```
+| Hook | Purpose |
+|------|---------|
+| `useEvmWallet` | Extract EVM wallet from Para account |
+| `useEthPrice` | Shared ETH price (30s refresh) |
+| `useTransactionHistory` | Tx history with pending state |
 
 ---
 
@@ -141,14 +132,13 @@ sendTransaction({
 
 ### 1. Get Para API Key
 
-Sign up at [Para Developer Portal](https://developer.getpara.com) and get a BETA API key.
+Sign up at [Para Developer Portal](https://developer.getpara.com)
 
 ### 2. Environment Setup
 
-Create `.env.local`:
-
 ```bash
-NEXT_PUBLIC_PARA_API_KEY=beta_YOUR_API_KEY_HERE
+cp .env.example .env.local
+# Add your NEXT_PUBLIC_PARA_API_KEY
 ```
 
 ### 3. Install & Run
@@ -162,57 +152,35 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ---
 
-## 🧪 Testing (BETA Environment)
-
-Use these test credentials with BETA API keys:
+## 🧪 Testing (BETA)
 
 | Type | Format | Example |
 |------|--------|---------|
 | Email | `*@test.getpara.com` | `dev@test.getpara.com` |
 | Phone | `(xxx)-555-xxxx` | `(425)-555-1234` |
 
-**Any OTP code works** (e.g., `123456`)
-
-> ⚠️ BETA accounts limited to 50 users. Delete via Developer Portal if needed.
+Any OTP code works (e.g., `123456`)
 
 ---
 
 ## 🎨 Design System
 
-### Tax Heaven 3000 Aesthetic
+### Visual Novel Aesthetic
 
 - **Font**: Fredoka (rounded, friendly)
-- **Primary**: `#d4145a` (magenta pink)
+- **Primary**: `#d4145a` (magenta)
 - **Accent**: `#ff69b4` (hot pink)
-- **Background**: Soft pink gradient with character pattern
+- **Container**: 70vh wallet with tab navigation
 
-### CSS Classes
+### Key CSS Classes
 
 ```css
-.anime-card    /* Pink gradient cards with white border */
-.anime-button  /* 3D effect buttons with hover animation */
-.anime-title   /* Pink text with white outline */
+.wallet-container  /* Main 70vh container */
+.tab-nav           /* Inline tab navigation */
+.anime-card        /* Pink gradient cards */
+.anime-button      /* 3D effect buttons */
+.anime-title-glow  /* Glowing text */
 ```
-
----
-
-## 📁 Key Files Explained
-
-### `app/providers.tsx`
-Wraps the app with Para SDK provider, React Query, and wagmi config for multi-chain support.
-
-### `app/hooks/useTransactionHistory.ts`
-Manages transaction state with:
-- Fetching from blockchain explorers (Etherscan, Basescan, Arbiscan)
-- Local storage for pending transactions
-- Real-time status updates
-
-### `app/components/SendForm.tsx`
-Full-featured send form with:
-- Network/token selection
-- USD ↔ ETH conversion
-- Address validation
-- Transaction status feedback
 
 ---
 
@@ -220,7 +188,7 @@ Full-featured send form with:
 
 - [Para Documentation](https://docs.getpara.com)
 - [Para React SDK](https://docs.getpara.com/v2/react)
-- [Next.js Documentation](https://nextjs.org/docs)
+- [Para Aave Integration](https://docs.getpara.com/v2/walkthroughs/aave)
 - [wagmi Documentation](https://wagmi.sh)
 
 ---
