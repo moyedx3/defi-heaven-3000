@@ -128,16 +128,38 @@ export function BalanceCard() {
 
   return (
     <div className="flex-1">
-      <div className="text-[10px] text-white/70 uppercase tracking-wider mb-0.5">Balance</div>
+      <div className="flex items-center gap-2 mb-0.5">
+        <span className="text-[10px] text-white/70 uppercase tracking-wider">Balance</span>
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="text-[9px] text-white/50 hover:text-white/80 transition-colors"
+        >
+          {showDetails ? "▲" : "▼"}
+        </button>
+      </div>
       {isLoading ? (
         <div className="h-6 w-24 animate-pulse rounded bg-white/30" />
       ) : (
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-xl font-bold text-white">{formattedTotal}</span>
-          {totalUsdValue && (
-            <span className="text-xs text-white/70">{totalBalance.toFixed(4)} ETH</span>
+        <>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-xl font-bold text-white">{formattedTotal}</span>
+            {totalUsdValue && (
+              <span className="text-xs text-white/70">{totalBalance.toFixed(4)} ETH</span>
+            )}
+          </div>
+          {showDetails && (
+            <div className="mt-1.5 space-y-0.5">
+              {chainBalances.map((chain) => (
+                <div key={chain.chainId} className="flex items-center justify-between text-[9px]">
+                  <span className="text-white/60">{chain.chainName}</span>
+                  <span className="text-white/80">
+                    {chain.isLoading ? "..." : chain.usdValue ? `$${chain.usdValue.toFixed(2)}` : `${parseFloat(chain.formatted).toFixed(4)} ETH`}
+                  </span>
+                </div>
+              ))}
+            </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
