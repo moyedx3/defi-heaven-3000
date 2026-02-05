@@ -252,6 +252,10 @@ $5,234.56          <- Total USD (ETH + USDC combined)
 - [x] Import and use `SUPPORTED_CHAINS` from config instead of local `CHAIN_INFO`
 - [x] Add `isError` state to track RPC failures
 
+### Phase 5: Documentation (2026-02-05)
+
+- [x] Create solution documentation at `docs/solutions/ui-bugs/erc20-token-balance-display.md`
+
 ## References & Research
 
 ### Internal References
