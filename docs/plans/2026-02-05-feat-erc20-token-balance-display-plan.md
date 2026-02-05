@@ -237,10 +237,20 @@ $5,234.56          <- Total USD (ETH + USDC combined)
 
 ### Phase 3: Polish
 
-- [ ] Test with Para SDK test credentials
-- [ ] Verify on all 4 chains
-- [ ] Test edge cases (zero balance, mixed holdings, RPC errors)
-- [ ] Verify no console errors or warnings
+- [x] Test with Para SDK test credentials
+- [x] Verify on all 4 chains
+- [x] Test edge cases (zero balance, mixed holdings, RPC errors)
+- [x] Verify no console errors or warnings
+
+### Phase 4: Code Review Fixes (2026-02-05)
+
+- [x] Fix Sepolia USDC address to official Circle address (`0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238`)
+- [x] Add null check for USDC config lookup (throw descriptive error)
+- [x] Add `staleTime: 30000` to all useBalance queries for caching
+- [x] Remove eslint-disable by restructuring useMemo dependencies
+- [x] Delete unused `getToken()` and `getUsdcAddress()` helper functions
+- [x] Import and use `SUPPORTED_CHAINS` from config instead of local `CHAIN_INFO`
+- [x] Add `isError` state to track RPC failures
 
 ## References & Research
 

@@ -4,9 +4,12 @@ import { useBalance } from "wagmi";
 import { useMemo } from "react";
 import { mainnet, base, arbitrum, sepolia } from "wagmi/chains";
 import { useEthPrice } from "./useEthPrice";
-import { SUPPORTED_TOKENS } from "../config/tokens";
+import { SUPPORTED_TOKENS, SUPPORTED_CHAINS } from "../config/tokens";
 
-export interface TokenBalance {
+// Stale time for balance queries - balances rarely change except after transactions
+const BALANCE_STALE_TIME = 30_000; // 30 seconds
+
+interface TokenBalance {
   symbol: string;
   balance: bigint;
   formatted: string;
@@ -14,12 +17,13 @@ export interface TokenBalance {
   isLoading: boolean;
 }
 
-export interface ChainTokenBalances {
+interface ChainTokenBalances {
   chainId: number;
   chainName: string;
   tokens: TokenBalance[];
   totalUsdValue: number;
   isLoading: boolean;
+  isError: boolean;
 }
 
 interface UseTokenBalancesResult {
@@ -28,69 +32,70 @@ interface UseTokenBalancesResult {
   totalEthBalance: number;
   totalUsdcBalance: number;
   isLoading: boolean;
+  isError: boolean;
 }
 
-const CHAIN_INFO = [
-  { chain: mainnet, name: "Ethereum" },
-  { chain: base, name: "Base" },
-  { chain: arbitrum, name: "Arbitrum" },
-  { chain: sepolia, name: "Sepolia" },
-] as const;
+// USDC price is hardcoded at $1 (stablecoin)
+const USDC_PRICE = 1.0;
 
 export function useTokenBalances(walletAddress: `0x${string}` | undefined): UseTokenBalancesResult {
   const { ethPrice } = useEthPrice();
-  const usdcConfig = SUPPORTED_TOKENS.find((t) => t.symbol === "USDC")!;
-  const usdcPrice = typeof usdcConfig.usdPrice === "number" ? usdcConfig.usdPrice : 1.0;
 
-  // ETH balances (4 calls)
+  // Get USDC config with proper null check
+  const usdcConfig = SUPPORTED_TOKENS.find((t) => t.symbol === "USDC");
+  if (!usdcConfig) {
+    throw new Error("USDC token configuration not found - check config/tokens.ts");
+  }
+
+  // ETH balances (4 calls) with staleTime for caching
   const ethMainnet = useBalance({
     address: walletAddress,
     chainId: mainnet.id,
-    query: { enabled: !!walletAddress },
+    query: { enabled: !!walletAddress, staleTime: BALANCE_STALE_TIME },
   });
   const ethBase = useBalance({
     address: walletAddress,
     chainId: base.id,
-    query: { enabled: !!walletAddress },
+    query: { enabled: !!walletAddress, staleTime: BALANCE_STALE_TIME },
   });
   const ethArbitrum = useBalance({
     address: walletAddress,
     chainId: arbitrum.id,
-    query: { enabled: !!walletAddress },
+    query: { enabled: !!walletAddress, staleTime: BALANCE_STALE_TIME },
   });
   const ethSepolia = useBalance({
     address: walletAddress,
     chainId: sepolia.id,
-    query: { enabled: !!walletAddress },
+    query: { enabled: !!walletAddress, staleTime: BALANCE_STALE_TIME },
   });
 
-  // USDC balances (4 calls)
+  // USDC balances (4 calls) with staleTime for caching
   const usdcMainnet = useBalance({
     address: walletAddress,
     token: usdcConfig.addresses[mainnet.id],
     chainId: mainnet.id,
-    query: { enabled: !!walletAddress },
+    query: { enabled: !!walletAddress, staleTime: BALANCE_STALE_TIME },
   });
   const usdcBase = useBalance({
     address: walletAddress,
     token: usdcConfig.addresses[base.id],
     chainId: base.id,
-    query: { enabled: !!walletAddress },
+    query: { enabled: !!walletAddress, staleTime: BALANCE_STALE_TIME },
   });
   const usdcArbitrum = useBalance({
     address: walletAddress,
     token: usdcConfig.addresses[arbitrum.id],
     chainId: arbitrum.id,
-    query: { enabled: !!walletAddress },
+    query: { enabled: !!walletAddress, staleTime: BALANCE_STALE_TIME },
   });
   const usdcSepolia = useBalance({
     address: walletAddress,
     token: usdcConfig.addresses[sepolia.id],
     chainId: sepolia.id,
-    query: { enabled: !!walletAddress },
+    query: { enabled: !!walletAddress, staleTime: BALANCE_STALE_TIME },
   });
 
-  // Derive loading state directly from queries
+  // Derive loading and error states directly from queries
   const isLoading =
     ethMainnet.isLoading ||
     ethBase.isLoading ||
@@ -101,18 +106,30 @@ export function useTokenBalances(walletAddress: `0x${string}` | undefined): UseT
     usdcArbitrum.isLoading ||
     usdcSepolia.isLoading;
 
-  const ethBalances = [ethMainnet, ethBase, ethArbitrum, ethSepolia];
-  const usdcBalances = [usdcMainnet, usdcBase, usdcArbitrum, usdcSepolia];
+  const isError =
+    ethMainnet.isError ||
+    ethBase.isError ||
+    ethArbitrum.isError ||
+    ethSepolia.isError ||
+    usdcMainnet.isError ||
+    usdcBase.isError ||
+    usdcArbitrum.isError ||
+    usdcSepolia.isError;
 
+  // Build chain balances using reduce to avoid variable reassignment
   const chainBalances: ChainTokenBalances[] = useMemo(() => {
-    return CHAIN_INFO.map(({ chain, name }, index) => {
-      const ethQuery = ethBalances[index];
-      const usdcQuery = usdcBalances[index];
+    const ethQueries = [ethMainnet, ethBase, ethArbitrum, ethSepolia];
+    const usdcQueries = [usdcMainnet, usdcBase, usdcArbitrum, usdcSepolia];
+
+    return SUPPORTED_CHAINS.map((chainConfig, index) => {
+      const ethQuery = ethQueries[index];
+      const usdcQuery = usdcQueries[index];
       const tokens: TokenBalance[] = [];
       const chainLoading = ethQuery.isLoading || usdcQuery.isLoading;
+      const chainError = ethQuery.isError || usdcQuery.isError;
 
       // Process ETH balance
-      if (ethQuery.data) {
+      if (!ethQuery.isError && ethQuery.data) {
         const ethValue = parseFloat(ethQuery.data.formatted);
         const ethUsdValue = ethPrice ? ethValue * ethPrice : 0;
 
@@ -128,9 +145,9 @@ export function useTokenBalances(walletAddress: `0x${string}` | undefined): UseT
       }
 
       // Process USDC balance
-      if (usdcQuery.data) {
+      if (!usdcQuery.isError && usdcQuery.data) {
         const usdcValue = parseFloat(usdcQuery.data.formatted);
-        const usdcUsdValue = usdcValue * usdcPrice;
+        const usdcUsdValue = usdcValue * USDC_PRICE;
 
         if (usdcValue > 0) {
           tokens.push({
@@ -143,39 +160,24 @@ export function useTokenBalances(walletAddress: `0x${string}` | undefined): UseT
         }
       }
 
-      const totalUsdValue = tokens.reduce((sum, t) => sum + t.usdValue, 0);
+      const chainTotalUsd = tokens.reduce((sum, t) => sum + t.usdValue, 0);
 
       return {
-        chainId: chain.id,
-        chainName: name,
+        chainId: chainConfig.id,
+        chainName: chainConfig.name,
         tokens,
-        totalUsdValue,
+        totalUsdValue: chainTotalUsd,
         isLoading: chainLoading,
+        isError: chainError,
       };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    ethMainnet.data,
-    ethMainnet.isLoading,
-    ethBase.data,
-    ethBase.isLoading,
-    ethArbitrum.data,
-    ethArbitrum.isLoading,
-    ethSepolia.data,
-    ethSepolia.isLoading,
-    usdcMainnet.data,
-    usdcMainnet.isLoading,
-    usdcBase.data,
-    usdcBase.isLoading,
-    usdcArbitrum.data,
-    usdcArbitrum.isLoading,
-    usdcSepolia.data,
-    usdcSepolia.isLoading,
+    ethMainnet, ethBase, ethArbitrum, ethSepolia,
+    usdcMainnet, usdcBase, usdcArbitrum, usdcSepolia,
     ethPrice,
-    usdcPrice,
   ]);
 
-  // Calculate totals from chainBalances
+  // Calculate totals from chainBalances (using reduce to avoid reassignment)
   const totalUsdValue = chainBalances.reduce((sum, chain) => sum + chain.totalUsdValue, 0);
 
   const totalEthBalance = chainBalances.reduce((sum, chain) => {
@@ -194,5 +196,6 @@ export function useTokenBalances(walletAddress: `0x${string}` | undefined): UseT
     totalEthBalance,
     totalUsdcBalance,
     isLoading,
+    isError,
   };
 }
