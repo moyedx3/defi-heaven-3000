@@ -1,130 +1,34 @@
 "use client";
 
-import { useBalance } from "wagmi";
-import { useMemo, useState } from "react";
-import { mainnet, base, sepolia, arbitrum } from "wagmi/chains";
+import { useState } from "react";
 import { useEvmWallet } from "../hooks/useEvmWallet";
-import { useEthPrice } from "../hooks/useEthPrice";
-
-interface ChainBalance {
-  chainId: number;
-  chainName: string;
-  balance: string;
-  formatted: string;
-  symbol: string;
-  isLoading: boolean;
-  usdValue?: number;
-}
+import { useTokenBalances } from "../hooks/useTokenBalances";
 
 export function BalanceCard() {
   const { address: walletAddress, isConnected } = useEvmWallet();
-  const { ethPrice } = useEthPrice();
   const [showDetails, setShowDetails] = useState(false);
 
-  const mainnetBalance = useBalance({
-    address: walletAddress,
-    chainId: mainnet.id,
-    query: { enabled: !!walletAddress },
-  });
-
-  const baseBalance = useBalance({
-    address: walletAddress,
-    chainId: base.id,
-    query: { enabled: !!walletAddress },
-  });
-
-  const arbitrumBalance = useBalance({
-    address: walletAddress,
-    chainId: arbitrum.id,
-    query: { enabled: !!walletAddress },
-  });
-
-  const sepoliaBalance = useBalance({
-    address: walletAddress,
-    chainId: sepolia.id,
-    query: { enabled: !!walletAddress },
-  });
-
-  // Aggregate balances
-  const { totalBalance, chainBalances, isLoading } = useMemo(() => {
-    let total = 0;
-    const balances: ChainBalance[] = [];
-    let loading = false;
-
-    const balanceQueries = [
-      { query: mainnetBalance, chainId: mainnet.id, chainName: "Ethereum" },
-      { query: baseBalance, chainId: base.id, chainName: "Base" },
-      { query: arbitrumBalance, chainId: arbitrum.id, chainName: "Arbitrum" },
-      { query: sepoliaBalance, chainId: sepolia.id, chainName: "Sepolia" },
-    ];
-
-    balanceQueries.forEach(({ query, chainId, chainName }) => {
-      if (query.isLoading) {
-        loading = true;
-        balances.push({
-          chainId,
-          chainName,
-          balance: "0",
-          formatted: "0.00",
-          symbol: "ETH",
-          isLoading: true,
-        });
-      } else if (query.isError) {
-        balances.push({
-          chainId,
-          chainName,
-          balance: "0",
-          formatted: "0.00",
-          symbol: "ETH",
-          isLoading: false,
-        });
-      } else if (query.data) {
-        const value = parseFloat(query.data.formatted);
-        total += value;
-        balances.push({
-          chainId,
-          chainName,
-          balance: query.data.value.toString(),
-          formatted: query.data.formatted,
-          symbol: query.data.symbol,
-          isLoading: false,
-          usdValue: ethPrice ? value * ethPrice : undefined,
-        });
-      } else {
-        balances.push({
-          chainId,
-          chainName,
-          balance: "0",
-          formatted: "0.00",
-          symbol: "ETH",
-          isLoading: false,
-        });
-      }
-    });
-
-    return {
-      totalBalance: total,
-      chainBalances: balances,
-      isLoading: loading,
-    };
-  }, [mainnetBalance, baseBalance, arbitrumBalance, sepoliaBalance, ethPrice]);
+  const {
+    chainBalances,
+    totalUsdValue,
+    totalEthBalance,
+    totalUsdcBalance,
+    isLoading,
+  } = useTokenBalances(walletAddress);
 
   if (!isConnected || !walletAddress) {
     return null;
   }
 
-  const totalUsdValue = ethPrice ? totalBalance * ethPrice : null;
-  const formattedTotal = totalUsdValue
-    ? totalUsdValue.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-        style: "currency",
-        currency: "USD",
-      })
-    : totalBalance.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 6,
-      });
+  const formattedTotalUsd = totalUsdValue.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    style: "currency",
+    currency: "USD",
+  });
+
+  // Filter chains that have at least one token with balance
+  const chainsWithBalance = chainBalances.filter((chain) => chain.tokens.length > 0);
 
   return (
     <div className="flex-1">
@@ -142,19 +46,34 @@ export function BalanceCard() {
       ) : (
         <>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-xl font-bold text-white">{formattedTotal}</span>
-            {totalUsdValue && (
-              <span className="text-xs text-white/70">{totalBalance.toFixed(4)} ETH</span>
-            )}
+            <span className="text-xl font-bold text-white">{formattedTotalUsd}</span>
+            <span className="text-xs text-white/70">
+              {totalEthBalance > 0 && `${totalEthBalance.toFixed(4)} ETH`}
+              {totalEthBalance > 0 && totalUsdcBalance > 0 && " + "}
+              {totalUsdcBalance > 0 && `${totalUsdcBalance.toFixed(2)} USDC`}
+            </span>
           </div>
-          {showDetails && (
-            <div className="mt-1.5 space-y-0.5">
-              {chainBalances.map((chain) => (
-                <div key={chain.chainId} className="flex items-center justify-between text-[9px]">
-                  <span className="text-white/60">{chain.chainName}</span>
-                  <span className="text-white/80">
-                    {chain.isLoading ? "..." : chain.usdValue ? `$${chain.usdValue.toFixed(2)}` : `${parseFloat(chain.formatted).toFixed(4)} ETH`}
-                  </span>
+          {showDetails && chainsWithBalance.length > 0 && (
+            <div className="mt-1.5 space-y-1">
+              {chainsWithBalance.map((chain) => (
+                <div key={chain.chainId} className="text-[9px]">
+                  <div className="text-white/60 mb-0.5">{chain.chainName}</div>
+                  {chain.tokens.map((token) => (
+                    <div
+                      key={`${chain.chainId}-${token.symbol}`}
+                      className="flex items-center justify-between pl-2"
+                    >
+                      <span className="text-white/50">{token.symbol}</span>
+                      <span className="text-white/80">
+                        {token.symbol === "ETH"
+                          ? `${parseFloat(token.formatted).toFixed(4)}`
+                          : `${parseFloat(token.formatted).toFixed(2)}`}
+                        <span className="text-white/50 ml-1">
+                          (${token.usdValue.toFixed(2)})
+                        </span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>

@@ -3,44 +3,15 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useSendTransaction, useWaitForTransactionReceipt, useChainId, useSwitchChain, useWriteContract } from "wagmi";
 import { parseEther, parseUnits, isAddress, erc20Abi } from "viem";
-import { mainnet, sepolia, base, arbitrum } from "wagmi/chains";
 import { useEvmWallet } from "../hooks/useEvmWallet";
 import { useEthPrice } from "../hooks/useEthPrice";
 import { addPendingTransaction, markTransactionConfirmed } from "../hooks/useTransactionHistory";
-
-interface Token {
-  symbol: string;
-  name: string;
-  decimals: number;
-  isNative: boolean;
-  addresses?: {
-    [chainId: number]: `0x${string}`;
-  };
-}
-
-const USDC_ADDRESSES: Record<number, `0x${string}`> = {
-  [mainnet.id]: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  [sepolia.id]: "0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8",
-  [base.id]: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-  [arbitrum.id]: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-};
-
-const TOKENS: Token[] = [
-  { symbol: "ETH", name: "Ethereum", decimals: 18, isNative: true },
-  { symbol: "USDC", name: "USD Coin", decimals: 6, isNative: false, addresses: USDC_ADDRESSES },
-];
-
-const SUPPORTED_CHAINS = [
-  { id: mainnet.id, name: "Ethereum", symbol: "ETH" },
-  { id: sepolia.id, name: "Sepolia", symbol: "ETH" },
-  { id: base.id, name: "Base", symbol: "ETH" },
-  { id: arbitrum.id, name: "Arbitrum", symbol: "ETH" },
-];
+import { SUPPORTED_TOKENS, SUPPORTED_CHAINS, type TokenConfig } from "../config/tokens";
 
 export function SendForm() {
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
-  const [selectedToken, setSelectedToken] = useState<Token>(TOKENS[0]);
+  const [selectedToken, setSelectedToken] = useState<TokenConfig>(SUPPORTED_TOKENS[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [amountType, setAmountType] = useState<"ETH" | "USD">("ETH");
 
@@ -184,13 +155,13 @@ export function SendForm() {
             <select
               value={selectedToken.symbol}
               onChange={(e) => {
-                const token = TOKENS.find((t) => t.symbol === e.target.value);
+                const token = SUPPORTED_TOKENS.find((t) => t.symbol === e.target.value);
                 if (token) { setSelectedToken(token); if (!token.isNative) setAmountType("ETH"); }
               }}
               className="w-full rounded-lg border-2 border-white/80 bg-white/90 px-2 py-1.5 text-xs font-bold text-pink-600"
               disabled={isLoading}
             >
-              {TOKENS.map((token) => (
+              {SUPPORTED_TOKENS.map((token) => (
                 <option key={token.symbol} value={token.symbol} disabled={!token.isNative && !token.addresses?.[currentChainId]}>
                   {token.symbol}
                 </option>
